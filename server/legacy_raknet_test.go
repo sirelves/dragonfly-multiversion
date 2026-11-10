@@ -235,3 +235,16 @@ func testLegacyEncryptedChecksum(t *testing.T, a, b *ecdsa.PrivateKey, proto int
 		t.Fatal("tampered ciphertext accepted")
 	}
 }
+
+func TestRakNetSplitRoutesByProtocol(t *testing.T) {
+	l := &legacyRakNetListener{ready: make(chan net.Conn), offline: make(chan net.Conn), offlineBelow: 589}
+	for proto, offline := range map[int32]bool{407: true, 582: true, 588: true, 589: false, 2225: false} {
+		if got := l.route(proto) == l.offline; got != offline {
+			t.Errorf("protocol %d offline = %v, want %v", proto, got, offline)
+		}
+	}
+	unsplit := &legacyRakNetListener{ready: make(chan net.Conn), offline: make(chan net.Conn)}
+	if unsplit.route(407) != unsplit.ready {
+		t.Error("an unsplit listener sent an old client to the offline side")
+	}
+}

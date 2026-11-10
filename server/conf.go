@@ -65,6 +65,10 @@ type Config struct {
 	Allower Allower
 
 	AuthDisabled bool
+	// LegacyOfflineBelow is the protocol below which the RakNet listener
+	// accepts clients without Xbox Live when authentication is on. See
+	// UserConfig.Server.LegacyOfflineBelow.
+	LegacyOfflineBelow int32
 
 	MuteEmoteChat bool
 
@@ -207,6 +211,12 @@ type UserConfig struct {
 
 		AuthEnabled bool
 
+		// LegacyOfflineBelow is the protocol below which clients join without
+		// Xbox Live even with AuthEnabled: they no longer can authenticate.
+		// 589 (1.20.0) covers every protocol this fork added; -1 requires Xbox
+		// Live from everyone. 0, an absent key, means 589.
+		LegacyOfflineBelow int32
+
 		DisableJoinQuitMessages bool
 
 		MuteEmoteChat bool
@@ -326,16 +336,38 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		conf.Difficulty = d
 	}
 	conf.SpawnProtection = uc.World.SpawnProtection
+	conf.LegacyOfflineBelow = uc.Server.LegacyOfflineBelow
+	if conf.LegacyOfflineBelow == 0 {
+		conf.LegacyOfflineBelow = 589
+	}
+	split := uc.Server.AuthEnabled && conf.LegacyOfflineBelow > 0
 	if uc.Network.NetherNet.Enabled && uc.Network.NetherNet.SharedUDP {
 		shared := &sharedGameUDP{address: uc.Network.Address}
-		conf.Listeners = append(conf.Listeners, func(c Config) (Listener, error) {
-			return uc.sharedRakNetListener(c, shared)
-		})
+		if split {
+			pair := uc.splitRakNetListeners(conf, func() (minecraft.Network, error) {
+				mux, err := shared.packet()
+				if err != nil {
+					logNetherNetListenFailure(conf.Log, uc.Network.Address, uc.Network.Address, err)
+					return nil, fmt.Errorf("listen shared UDP: %w", err)
+				}
+				return sharedRakNetNetwork{conn: mux.raknet}, nil
+			})
+			conf.Listeners = append(conf.Listeners, pair[0], pair[1])
+		} else {
+			conf.Listeners = append(conf.Listeners, func(c Config) (Listener, error) {
+				return uc.sharedRakNetListener(c, shared)
+			})
+		}
 		conf.Listeners = append(conf.Listeners, func(c Config) (Listener, error) {
 			return uc.netherNetListenerWithUDP(c, shared)
 		})
 	} else {
-		conf.Listeners = append(conf.Listeners, uc.listenerFunc)
+		if split {
+			pair := uc.splitRakNetListeners(conf, func() (minecraft.Network, error) { return rakNetNetwork(conf.Log), nil })
+			conf.Listeners = append(conf.Listeners, pair[0], pair[1])
+		} else {
+			conf.Listeners = append(conf.Listeners, uc.listenerFunc)
+		}
 		if uc.Network.NetherNet.Enabled {
 			conf.Listeners = append(conf.Listeners, uc.netherNetListener)
 		}
@@ -443,6 +475,7 @@ func DefaultConfig() UserConfig {
 	c.Server.Name = "A TM-Dragonfly server"
 	c.Server.SubName = "Powered by TM-Dragonfly"
 	c.Server.AuthEnabled = true
+	c.Server.LegacyOfflineBelow = 589
 	c.World.SaveData = true
 	c.World.Folder = "worlds/world"
 	c.World.WorldsFolder = "worlds"

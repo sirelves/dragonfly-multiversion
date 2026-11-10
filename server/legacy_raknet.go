@@ -73,14 +73,22 @@ func (n legacyRakNet) Listen(address string) (minecraft.NetworkListener, error) 
 	if err != nil {
 		return nil, err
 	}
-	w := &legacyRakNetListener{NetworkListener: l, ready: make(chan net.Conn), done: make(chan struct{})}
+	return newLegacyRakNetListener(l, 0), nil
+}
+
+func newLegacyRakNetListener(l minecraft.NetworkListener, offlineBelow int32) *legacyRakNetListener {
+	w := &legacyRakNetListener{NetworkListener: l, ready: make(chan net.Conn), offline: make(chan net.Conn), offlineBelow: offlineBelow, done: make(chan struct{})}
 	go w.accept()
-	return w, nil
+	return w
 }
 
 type legacyRakNetListener struct {
 	minecraft.NetworkListener
 	ready chan net.Conn
+	// offline receives the clients below offlineBelow when the listener is
+	// shared through a rakNetSplit; ready gets everyone else.
+	offline      chan net.Conn
+	offlineBelow int32
 	done  chan struct{}
 	once  sync.Once
 }
@@ -106,7 +114,7 @@ func (l *legacyRakNetListener) accept() {
 				// batch is already compressed and carries the Login.
 				if proto, ok := preSettingsLogin(first); ok {
 					select {
-					case l.ready <- newPreSettingsRakNetConn(c, first, proto):
+					case l.route(proto) <- newPreSettingsRakNetConn(c, first, proto):
 					case <-l.done:
 						_ = c.Close()
 					}
@@ -128,12 +136,20 @@ func (l *legacyRakNetListener) accept() {
 				prepared = newLegacyRakNetConn(c, first, version)
 			}
 			select {
-			case l.ready <- prepared:
+			case l.route(version) <- prepared:
 			case <-l.done:
 				_ = prepared.Close()
 			}
 		}()
 	}
+}
+
+// route returns the channel a client of protocol proto is handed to.
+func (l *legacyRakNetListener) route(proto int32) chan net.Conn {
+	if proto < l.offlineBelow {
+		return l.offline
+	}
+	return l.ready
 }
 
 func (l *legacyRakNetListener) Accept() (net.Conn, error) {
@@ -648,4 +664,84 @@ func (x *cfb8) XORKeyStream(dst, src []byte) {
 		copy(x.sr, x.sr[1:])
 		x.sr[len(x.sr)-1] = next
 	}
+}
+
+// rakNetSplit shares one legacy RakNet listener between two minecraft
+// listeners on the same address: clients below the offlineBelow protocol go to
+// the one that does not require Xbox Live, all others to the one that does.
+// The old clients cannot authenticate anymore; everyone else still must.
+type rakNetSplit struct {
+	minecraft.Network
+	offlineBelow int32
+
+	once  sync.Once
+	inner *legacyRakNetListener
+	err   error
+	open  atomic.Int32
+}
+
+// network returns the minecraft.Network of one side of the split.
+func (s *rakNetSplit) network(offline bool) minecraft.Network {
+	return splitNetwork{split: s, offline: offline}
+}
+
+type splitNetwork struct {
+	split   *rakNetSplit
+	offline bool
+}
+
+func (n splitNetwork) DialContext(ctx context.Context, address string) (net.Conn, error) {
+	return n.split.DialContext(ctx, address)
+}
+
+func (n splitNetwork) PingContext(ctx context.Context, address string) ([]byte, error) {
+	return n.split.PingContext(ctx, address)
+}
+
+func (n splitNetwork) Listen(address string) (minecraft.NetworkListener, error) {
+	s := n.split
+	s.once.Do(func() {
+		l, err := s.Network.Listen(address)
+		if err != nil {
+			s.err = err
+			return
+		}
+		s.inner = newLegacyRakNetListener(l, s.offlineBelow)
+	})
+	if s.err != nil {
+		return nil, s.err
+	}
+	s.open.Add(1)
+	ch := s.inner.ready
+	if n.offline {
+		ch = s.inner.offline
+	}
+	return &splitListener{legacyRakNetListener: s.inner, split: s, ch: ch}, nil
+}
+
+// splitListener is one side of a rakNetSplit. Closing it closes the shared
+// listener once both sides are closed.
+type splitListener struct {
+	*legacyRakNetListener
+	split *rakNetSplit
+	ch    chan net.Conn
+	once  sync.Once
+}
+
+func (l *splitListener) Accept() (net.Conn, error) {
+	select {
+	case c := <-l.ch:
+		return c, nil
+	case <-l.done:
+		return nil, net.ErrClosed
+	}
+}
+
+func (l *splitListener) Close() (err error) {
+	l.once.Do(func() {
+		if l.split.open.Add(-1) == 0 {
+			err = l.legacyRakNetListener.Close()
+		}
+	})
+	return
 }

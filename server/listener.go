@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"sync"
 
 	"github.com/df-mc/dragonfly/multiversion/legacy"
 	"github.com/df-mc/dragonfly/multiversion/native"
@@ -116,6 +117,48 @@ func (uc UserConfig) transportListener(conf Config, transport string) (Listener,
 	}
 	conf.Log.Info("Listener running", "transport", transport, "addr", l.Addr())
 	return listener{Listener: l, log: conf.Log}, nil
+}
+
+// splitRakNetListeners returns the two RakNet listeners of a rakNetSplit: one
+// that requires Xbox Live and one, for clients below conf.LegacyOfflineBelow,
+// that does not. base makes the network the split shares; it runs once.
+func (uc UserConfig) splitRakNetListeners(conf Config, base func() (minecraft.Network, error)) [2]func(Config) (Listener, error) {
+	var (
+		once  sync.Once
+		split *rakNetSplit
+		err   error
+	)
+	open := func(c Config, offline bool) (Listener, error) {
+		once.Do(func() {
+			var n minecraft.Network
+			if n, err = base(); err == nil {
+				split = &rakNetSplit{Network: n, offlineBelow: c.LegacyOfflineBelow}
+			}
+		})
+		if err != nil {
+			return nil, err
+		}
+		cfg := uc.minecraftListenConfig(c)
+		side := "online"
+		if offline {
+			cfg.AuthenticationDisabled, side = true, "offline"
+		}
+		cfg.ErrorLog = c.Log.With("net origin", "gophertunnel", "transport", "raknet", "auth", side)
+		l, err := cfg.ListenNetwork(split.network(offline), uc.Network.Address)
+		if err != nil {
+			return nil, fmt.Errorf("create minecraft listener: %w", err)
+		}
+		if offline {
+			c.Log.Info("Listener running", "transport", "raknet", "addr", l.Addr(), "auth", "none below protocol", "protocol", c.LegacyOfflineBelow)
+		} else {
+			c.Log.Info("Listener running", "transport", "raknet", "addr", l.Addr())
+		}
+		return listener{Listener: l, log: c.Log}, nil
+	}
+	return [2]func(Config) (Listener, error){
+		func(c Config) (Listener, error) { return open(c, false) },
+		func(c Config) (Listener, error) { return open(c, true) },
+	}
 }
 
 type listener struct {
