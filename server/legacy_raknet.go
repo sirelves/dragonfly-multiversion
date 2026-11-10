@@ -102,6 +102,16 @@ func (l *legacyRakNetListener) accept() {
 			_ = c.SetReadDeadline(time.Time{})
 			pks, err := unpackLegacyBatch(first)
 			if err != nil || len(pks) != 1 || legacyPacketID(pks[0]) != packet.IDRequestNetworkSettings {
+				// Clients before 1.19.30 skip RequestNetworkSettings: their first
+				// batch is already compressed and carries the Login.
+				if proto, ok := preSettingsLogin(first); ok {
+					select {
+					case l.ready <- newPreSettingsRakNetConn(c, first, proto):
+					case <-l.done:
+						_ = c.Close()
+					}
+					return
+				}
 				_ = c.Close()
 				return
 			}
@@ -184,20 +194,59 @@ type legacyBatchResult struct {
 
 type legacyRakNetConn struct {
 	rakNetReplay
-	reads      chan legacyBatchResult
-	done       chan struct{}
-	once       sync.Once
-	writeMu    sync.Mutex
-	compressed atomic.Bool
-	clientKey  atomic.Pointer[ecdsa.PublicKey]
-	crypto     atomic.Pointer[legacyPacketCrypto]
-	handshake  chan struct{}
+	// preSettings is set for clients before 1.19.30, which never see the
+	// NetworkSettings packet: settled closes once the server sent it.
+	preSettings bool
+	settled     chan struct{}
+	settleOnce  sync.Once
+	reads       chan legacyBatchResult
+	done        chan struct{}
+	once        sync.Once
+	writeMu     sync.Mutex
+	compressed  atomic.Bool
+	clientKey   atomic.Pointer[ecdsa.PublicKey]
+	crypto      atomic.Pointer[legacyPacketCrypto]
+	handshake   chan struct{}
 }
 
 func newLegacyRakNetConn(c net.Conn, first []byte) *legacyRakNetConn {
-	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{})}
-	go w.readBatches(first)
+	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{}), settled: make(chan struct{})}
+	go w.readBatches(first, nil)
 	return w
+}
+
+// newPreSettingsRakNetConn serves a client older than 1.19.30. gophertunnel
+// first gets a RequestNetworkSettings carrying the client's protocol, then,
+// once it has answered with NetworkSettings (which is not forwarded), the
+// client's real first batch with the Login.
+func newPreSettingsRakNetConn(c net.Conn, login []byte, proto int32) *legacyRakNetConn {
+	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{}), settled: make(chan struct{}), preSettings: true}
+	synthetic := packLegacyBatch([][]byte{encodeLegacyPacket(&packet.RequestNetworkSettings{ClientProtocol: proto})})
+	go w.readBatches(synthetic, login)
+	return w
+}
+
+// preSettingsLogin reports whether first is the compressed Login batch of a
+// client older than 1.19.30, and returns that client's protocol.
+func preSettingsLogin(first []byte) (int32, bool) {
+	if len(first) < 2 || first[0] != 0xfe {
+		return 0, false
+	}
+	body, err := packet.FlateCompression.Decompress(first[1:], packet.DefaultMaxDecompressedLen)
+	if err != nil {
+		return 0, false
+	}
+	pks, err := unpackLegacyBatch(append([]byte{0xfe}, body...))
+	if err != nil || len(pks) != 1 || legacyPacketID(pks[0]) != packet.IDLogin {
+		return 0, false
+	}
+	buf := bytes.NewBuffer(pks[0])
+	var header packet.Header
+	if header.Read(buf) != nil || buf.Len() < 4 {
+		return 0, false
+	}
+	proto := int32(binary.BigEndian.Uint32(buf.Bytes()))
+	return proto, proto > 0 && proto < 554
 }
 
 func (*legacyRakNetConn) DisableEncryption() bool { return true } // encryption is handled before batch conversion
@@ -216,7 +265,7 @@ func (c *legacyRakNetConn) ReadPacket() ([]byte, error) {
 	}
 }
 
-func (c *legacyRakNetConn) readBatches(first []byte) {
+func (c *legacyRakNetConn) readBatches(first, pending []byte) {
 	data := first
 	for {
 		converted, err := c.incoming(data)
@@ -229,6 +278,15 @@ func (c *legacyRakNetConn) readBatches(first []byte) {
 		}
 		if err != nil {
 			return
+		}
+		if pending != nil {
+			select {
+			case <-c.settled:
+			case <-c.done:
+				return
+			}
+			data, pending = pending, nil
+			continue
 		}
 		data, err = readRakNetBatch(c.Conn)
 		if err != nil {
@@ -326,7 +384,14 @@ func (c *legacyRakNetConn) Write(data []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		for i, pk := range pks {
+		out := pks[:0]
+		for _, pk := range pks {
+			if legacyPacketID(pk) == packet.IDNetworkSettings && c.preSettings {
+				c.compressed.Store(true)
+				c.settleOnce.Do(func() { close(c.settled) })
+				continue // the client predates NetworkSettings
+			}
+			out = append(out, pk)
 			if legacyPacketID(pk) == packet.IDNetworkSettings {
 				buf := bytes.NewBuffer(pk)
 				var header packet.Header
@@ -337,11 +402,14 @@ func (c *legacyRakNetConn) Write(data []byte) (int, error) {
 				}
 				settings.CompressionThreshold = 1
 				settings.CompressionAlgorithm = packet.CompressionAlgorithmFlate
-				pks[i] = encodeLegacyPacket(&settings)
+				out[len(out)-1] = encodeLegacyPacket(&settings)
 				c.compressed.Store(true)
 			}
 		}
-		_, err = c.Conn.Write(packLegacyBatch(pks))
+		if len(out) == 0 {
+			return len(data), nil
+		}
+		_, err = c.Conn.Write(packLegacyBatch(out))
 		return len(data), err
 	}
 	if len(data) < 2 || data[0] != 0xfe {
