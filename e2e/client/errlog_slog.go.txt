@@ -1,0 +1,10 @@
+package main
+
+import (
+	"io"
+	"log/slog"
+)
+
+func newErrLog(w io.Writer) *slog.Logger {
+	return slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{Level: slog.LevelWarn}))
+}
