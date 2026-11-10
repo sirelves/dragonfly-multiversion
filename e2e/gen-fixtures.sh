@@ -9,7 +9,9 @@ dir=build/fixtures-$proto
 mkdir -p "$dir"
 cp fixtures/main.go "$dir/main.go"
 cp "${FIXTURE_ACTIONS:-fixtures/actions.go.txt}" "$dir/actions.go"
-cp "${FIXTURE_DAMAGE:-fixtures/damage.go.txt}" "$dir/damage.go"
+damage=fixtures/damage.go.txt
+grep -q 'AttributeValue' "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol/attribute.go" || damage=fixtures/damage_old.go.txt
+cp "${FIXTURE_DAMAGE:-$damage}" "$dir/damage.go"
 src=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol
 if ! grep -q 'FilterCause' "$src/item_stack.go"; then
   sed -i '' 's/, FilterCause: -1}}}/}}}/' "$dir/main.go"  # added in 554

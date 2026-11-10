@@ -49,3 +49,10 @@ fill server NetworkSettings <=545
 # CloudburstMC has written since 419.
 zero server AnimateEntity <=545
 fill server AnimateEntity <=545
+# gophertunnel v1.19.7–v1.24.4 reads SpawnParticleEffect.MoLangVariables twice
+# (a bare slice, then the optional CloudburstMC has written since 503).
+zero server SpawnParticleEffect 503,527,534,544
+fill server SpawnParticleEffect 503,527,534,544
+# The handshake packets pass the unknown-ID filter: the listener rewrites them.
+zero server RequestNetworkSettings <=545
+fill server RequestNetworkSettings <=545
