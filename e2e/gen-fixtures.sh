@@ -10,10 +10,14 @@ mkdir -p "$dir"
 cp fixtures/main.go "$dir/main.go"
 cp "${FIXTURE_ACTIONS:-fixtures/actions.go.txt}" "$dir/actions.go"
 cp "${FIXTURE_DAMAGE:-fixtures/damage.go.txt}" "$dir/damage.go"
+src=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol
+if ! grep -q 'FilterCause' "$src/item_stack.go"; then
+  sed -i '' 's/, FilterCause: -1}}}/}}}/' "$dir/main.go"  # added in 554
+fi
 if [ ! -f "$dir/go.mod" ]; then
   (cd "$dir" && go mod init fixtures >/dev/null 2>&1 && go get "github.com/sandertv/gophertunnel@$tag" >/dev/null 2>&1 && go mod tidy >/dev/null 2>&1)
 fi
-rev=$(git -C "${GT_HISTORY:?set GT_HISTORY to a gophertunnel clone}" rev-parse "$tag^{commit}")
+rev=$(git -C "$(e2e_gt_history)" rev-parse "$tag^{commit}")
 file=../multiversion/itemdata/runtime_item_states_$proto.json
 [ -f "$file" ] || file=../multiversion/itemdata/runtime_item_states_$((proto - 1)).json  # 568 shares 567
 sword=$(python3 -c "import json,sys;print(next(i['id'] for i in json.load(open('$file')) if i['name']=='minecraft:stone_sword'))")

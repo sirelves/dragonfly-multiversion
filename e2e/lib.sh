@@ -29,3 +29,11 @@ e2e_build_verifier() {
   fi
   (cd "$dir" && go build -o "$here/bin/verify-$proto" .) || return 1
 }
+
+# e2e_gt_history: a full gophertunnel clone (for tag commits and diffs),
+# cloned into build/ on first use unless GT_HISTORY points at one.
+e2e_gt_history() {
+  local dir=${GT_HISTORY:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/build/gophertunnel}
+  [ -d "$dir/.git" ] || git clone -q https://github.com/Sandertv/gophertunnel.git "$dir"
+  echo "$dir"
+}

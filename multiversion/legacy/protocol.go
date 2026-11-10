@@ -38,7 +38,7 @@ func Protocols() []minecraft.Protocol {
 }
 
 // order lists the supported protocols, newest first.
-var order = []int32{582, 575, 568, 567, 560, 557, 554}
+var order = []int32{582, 575, 568, 567, 560, 557, 554, 545}
 
 var versions = map[int32]string{
 	582: "1.19.80",
@@ -48,6 +48,7 @@ var versions = map[int32]string{
 	560: "1.19.50",
 	557: "1.19.40",
 	554: "1.19.30",
+	545: "1.19.21",
 }
 
 func (p Protocol) ID() int32   { return p.id }
@@ -108,11 +109,17 @@ func (p Protocol) knownOnly(pks []packet.Packet) []packet.Packet {
 	known := knownSets[p.id]
 	out := pks[:0]
 	for _, pk := range pks {
-		if _, ok := known[pk.ID()]; ok {
+		if _, ok := known[pk.ID()]; ok || handshake(pk.ID()) {
 			out = append(out, pk)
 		}
 	}
 	return out
+}
+
+// handshake reports whether id is one of the packets the RakNet listener
+// rewrites for clients before 1.19.30, which must reach it intact.
+func handshake(id uint32) bool {
+	return id == packet.IDRequestNetworkSettings || id == packet.IDNetworkSettings
 }
 
 var knownSets = func() map[int32]map[uint32]struct{} {
@@ -147,7 +154,7 @@ type delta struct {
 }
 
 // deltas is ordered newest first.
-var deltas = []delta{delta582, delta575, delta567, delta560, delta557, delta554}
+var deltas = []delta{delta582, delta575, delta567, delta560, delta557, delta554, delta545}
 
 // deltas returns the deltas between 1.20.0 and p, newest first.
 func (p Protocol) deltas() []delta {

@@ -40,3 +40,12 @@ fill client SetActorLink
 # gophertunnel <= v1.27 declares UpdateClientInputLocks.Unmarshal on a value
 # receiver, so the reference decoder never stores what it reads.
 fill server UpdateClientInputLocks <=568
+# The server never sends ItemStackRequest; it decodes the client's (recv) form.
+fill server ItemStackRequest <=545
+# Clients before 1.19.30 never see NetworkSettings: the listener swallows it.
+zero server NetworkSettings <=545
+fill server NetworkSettings <=545
+# gophertunnel <= v1.24.6 forgets to read AnimateEntity.BlendOutTime, which
+# CloudburstMC has written since 419.
+zero server AnimateEntity <=545
+fill server AnimateEntity <=545
