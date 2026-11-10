@@ -1,5 +1,6 @@
 # Failures the 1.20.0 (589) path of TM-Dragonfly already has; legacy
-# protocols inherit them. Format: <mode> <direction> <packet>.
+# protocols inherit them. Format: <mode> <direction> <packet> [protocols],
+# where the optional comma-separated list limits the entry to those protocols.
 zero server AgentAction
 zero server CameraInstruction
 zero server CameraPresets
@@ -36,3 +37,6 @@ fill server SubChunk
 fill client CodeBuilderSource
 fill client EditorNetwork
 fill client SetActorLink
+# gophertunnel <= v1.27 declares UpdateClientInputLocks.Unmarshal on a value
+# receiver, so the reference decoder never stores what it reads.
+fill server UpdateClientInputLocks 567,568
