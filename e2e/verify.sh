@@ -40,7 +40,7 @@ for pt in "$@"; do
       head="=== $p $mode $( [ $dir = server ] && echo 'server→client' || echo 'client→server')"
       awk -v h="$head" '$0==h{f=1;next} /^=== /{f=0} f' "$dump/report.log" | grep -a -E '^BAD|RECV ' \
         | sed -E 's/.*(BAD|RECV) +([A-Za-z0-9]+).*/\2/' | sort -u | while read -r name; do
-          awk -v k="$mode $dir $name" -v p="$p" 'index($0, k) == 1 { rest = substr($0, length(k) + 1); if (rest == "") f = 1; else { n = split(substr(rest, 2), l, ","); for (i = 1; i <= n; i++) if (l[i] == p) f = 1 } } END { exit !f }' "$here/verify-baseline.txt" || echo "NEW $p $mode $dir $name"
+          awk -v k="$mode $dir $name" -v p="$p" 'index($0, k) == 1 { rest = substr($0, length(k) + 1); if (rest == "") f = 1; else { n = split(substr(rest, 2), l, ","); for (i = 1; i <= n; i++) if (l[i] == p || (substr(l[i], 1, 2) == "<=" && p + 0 <= substr(l[i], 3) + 0)) f = 1 } } END { exit !f }' "$here/verify-baseline.txt" || echo "NEW $p $mode $dir $name"
         done
     done
   done

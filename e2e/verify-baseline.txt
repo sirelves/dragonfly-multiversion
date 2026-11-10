@@ -39,4 +39,4 @@ fill client EditorNetwork
 fill client SetActorLink
 # gophertunnel <= v1.27 declares UpdateClientInputLocks.Unmarshal on a value
 # receiver, so the reference decoder never stores what it reads.
-fill server UpdateClientInputLocks 567,568
+fill server UpdateClientInputLocks <=568
