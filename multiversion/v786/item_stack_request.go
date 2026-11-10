@@ -144,7 +144,9 @@ func stackReqAction786(r protocol.IO, x *protocol.StackRequestAction) {
 		if p := ProtoOf(r); p != 0 && p < 712 {
 			a.NumberOfCrafts = timesCrafted
 		}
-		protocol.FuncSlice(r, &a.Ingredients, r.ItemDescriptorCount)
+		if p := ProtoOf(r); p == 0 || p >= 557 { // added in 557
+			protocol.FuncSlice(r, &a.Ingredients, r.ItemDescriptorCount)
+		}
 	case *protocol.CraftGrindstoneRecipeStackRequestAction:
 
 		r.Varuint32(&a.RecipeNetworkID)

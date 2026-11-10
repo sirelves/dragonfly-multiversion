@@ -78,7 +78,9 @@ func (pk *AddPlayer) Marshal(io protocol.IO) {
 	io.ItemInstance(&pk.HeldItem)
 	io.Varint32(&pk.GameType)
 	io.EntityMetadata(&pk.EntityMetadata)
-	protocol.Single(io, &pk.EntityProperties)
+	if p := ProtoOf(io); p == 0 || p >= 557 { // added in 557
+		protocol.Single(io, &pk.EntityProperties)
+	}
 	AbilityData786(io, &pk.AbilityData)
 	EntityLinks786(io, &pk.EntityLinks)
 	io.String(&pk.DeviceID)

@@ -68,6 +68,8 @@ func (pk *AddActor) Marshal(io protocol.IO) {
 	io.Float32(&pk.BodyYaw)
 	protocol.Slice(io, &pk.Attributes)
 	io.EntityMetadata(&pk.EntityMetadata)
-	protocol.Single(io, &pk.EntityProperties)
+	if p := ProtoOf(io); p == 0 || p >= 557 { // added in 557
+		protocol.Single(io, &pk.EntityProperties)
+	}
 	EntityLinks786(io, &pk.EntityLinks)
 }
