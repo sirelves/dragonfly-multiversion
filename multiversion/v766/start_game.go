@@ -161,7 +161,13 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.String(&pk.WorldName)
 	io.String(&pk.TemplateContentIdentity)
 	io.Bool(&pk.Trial)
-	v786.PlayerMoveSettings786(io, &pk.PlayerMovementSettings)
+	if p := v786.ProtoOf(io); p != 0 && p < 428 { // only the movement mode before 428
+		mode := uint32(pk.PlayerMovementSettings.MovementType)
+		io.Varuint32(&mode)
+		pk.PlayerMovementSettings.MovementType = int32(mode)
+	} else {
+		v786.PlayerMoveSettings786(io, &pk.PlayerMovementSettings)
+	}
 	io.Int64(&pk.Time)
 	io.Varint32(&pk.EnchantmentSeed)
 	protocol.Slice(io, &pk.Blocks)

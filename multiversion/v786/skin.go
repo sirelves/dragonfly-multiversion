@@ -55,7 +55,9 @@ type Skin786 struct {
 
 func (x *Skin786) Marshal(io protocol.IO) {
 	io.String(&x.SkinID)
-	io.String(&x.PlayFabID)
+	if p := ProtoOf(io); p == 0 || p >= 428 { // added in 428
+		io.String(&x.PlayFabID)
+	}
 	io.ByteSlice(&x.SkinResourcePatch)
 	io.Uint32(&x.SkinImageWidth)
 	io.Uint32(&x.SkinImageHeight)

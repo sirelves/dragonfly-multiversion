@@ -82,14 +82,16 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	}
 	io.Varuint64(&pk.Tick)
 	io.Vec3(&pk.Delta)
-	if pk.InputData&(1<<34) != 0 {
-		io.PlayerInventoryAction(&pk.ItemInteractionData)
-	}
-	if pk.InputData&(1<<36) != 0 {
-		v786.MarshalItemStackRequest786(io, &pk.ItemStackRequest)
-	}
-	if pk.InputData&(1<<35) != 0 {
-		v786.PlayerBlockActions786(io, &pk.BlockActions)
+	if p := v786.ProtoOf(io); p == 0 || p >= 428 { // the interaction sections arrived in 428
+		if pk.InputData&(1<<34) != 0 {
+			io.PlayerInventoryAction(&pk.ItemInteractionData)
+		}
+		if pk.InputData&(1<<36) != 0 {
+			v786.MarshalItemStackRequest786(io, &pk.ItemStackRequest)
+		}
+		if pk.InputData&(1<<35) != 0 {
+			v786.PlayerBlockActions786(io, &pk.BlockActions)
+		}
 	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 575 { // added in 575
 		io.Vec2(&pk.AnalogueMoveVector)
