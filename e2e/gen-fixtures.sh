@@ -13,6 +13,15 @@ damage=fixtures/damage.go.txt
 grep -q 'AttributeValue' "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol/attribute.go" || damage=fixtures/damage_old.go.txt
 cp "${FIXTURE_DAMAGE:-$damage}" "$dir/damage.go"
 src=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol
+# AutoCraftRecipe gained TimesCrafted in 448 (CloudburstMC); gophertunnel
+# v1.14.3, the 448 tag, forgot it, so that tag cannot produce the action.
+if ! grep -A4 'type AutoCraftRecipeStackRequestAction struct' "$src/item_stack.go" | grep -q TimesCrafted; then
+  if [ "$proto" = 448 ]; then
+    sed -i '' '/"auto":/d' "$dir/actions.go"
+  else
+    sed -i '' 's/AutoCraftRecipeStackRequestAction{RecipeNetworkID: 123, TimesCrafted: 1}/AutoCraftRecipeStackRequestAction{RecipeNetworkID: 123}/' "$dir/actions.go"
+  fi
+fi
 # Drop the fixtures of actions this tag does not have yet.
 for t in $(grep -oE 'protocol\.[A-Za-z]+StackRequestAction\{' "$dir/actions.go" | sed 's/protocol\.//; s/{//' | sort -u); do
   grep -q "type $t struct" "$src"/*.go || sed -i '' "/protocol\.$t{/d" "$dir/actions.go"
