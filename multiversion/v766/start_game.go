@@ -125,8 +125,10 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Bool(&pk.FromWorldTemplate)
 	io.Bool(&pk.WorldTemplateSettingsLocked)
 	io.Bool(&pk.OnlySpawnV1Villagers)
-	io.Bool(&pk.PersonaDisabled)
-	io.Bool(&pk.CustomSkinsDisabled)
+	if p := v786.ProtoOf(io); p == 0 || p >= 544 { // added in 544
+		io.Bool(&pk.PersonaDisabled)
+		io.Bool(&pk.CustomSkinsDisabled)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 567 { // added in 567
 		io.Bool(&pk.EmoteChatMuted)
 	}
@@ -136,8 +138,10 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Bool(&pk.NewNether)
 	protocol.Single(io, &pk.EducationSharedResourceURI)
 	protocol.OptionalFunc(io, &pk.ForceExperimentalGameplay, io.Bool)
-	io.Uint8(&pk.ChatRestrictionLevel)
-	io.Bool(&pk.DisablePlayerInteractions)
+	if p := v786.ProtoOf(io); p == 0 || p >= 544 { // added in 544
+		io.Uint8(&pk.ChatRestrictionLevel)
+		io.Bool(&pk.DisablePlayerInteractions)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 685 { // added in 685
 		io.String(&pk.ServerID)
 		io.String(&pk.WorldID)
@@ -158,7 +162,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.NBT(&pk.PropertyData, nbt.NetworkLittleEndian)
 	io.Uint64(&pk.ServerBlockStateChecksum)
 	io.UUID(&pk.WorldTemplateID)
-	io.Bool(&pk.ClientSideGeneration)
+	if p := v786.ProtoOf(io); p == 0 || p >= 544 { // added in 544
+		io.Bool(&pk.ClientSideGeneration)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 582 { // added in 582
 		io.Bool(&pk.UseBlockNetworkIDHashes)
 	}

@@ -69,7 +69,9 @@ func (pk *ClientBoundMapItemData) Marshal(io protocol.IO) {
 	io.Varuint32(&pk.UpdateFlags)
 	io.Uint8(&pk.Dimension)
 	io.Bool(&pk.LockedMap)
-	io.BlockPos(&pk.Origin)
+	if p := ProtoOf(io); p == 0 || p >= 544 { // added in 544
+		io.BlockPos(&pk.Origin)
+	}
 
 	if pk.UpdateFlags&MapUpdateFlagInitialisation != 0 {
 		protocol.FuncSlice(io, &pk.MapsIncludedIn, io.Varint64)

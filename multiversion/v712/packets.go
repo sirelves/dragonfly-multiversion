@@ -39,7 +39,9 @@ func (x *Attribute) Marshal(r protocol.IO) {
 	r.Float32(&x.Value)
 	r.Float32(&x.Default)
 	r.String(&x.Name)
-	protocol.Slice(r, &x.Modifiers)
+	if p := v786.ProtoOf(r); p == 0 || p >= 544 { // added in 544
+		protocol.Slice(r, &x.Modifiers)
+	}
 }
 
 type UpdateAttributes struct {
