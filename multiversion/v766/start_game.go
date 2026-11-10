@@ -170,7 +170,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	if p := v786.ProtoOf(io); p == 0 || p >= 527 { // added in 527
 		io.NBT(&pk.PropertyData, nbt.NetworkLittleEndian)
 	}
-	io.Uint64(&pk.ServerBlockStateChecksum)
+	if p := v786.ProtoOf(io); p == 0 || p >= 475 { // added in 475
+		io.Uint64(&pk.ServerBlockStateChecksum)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 527 { // added in 527
 		io.UUID(&pk.WorldTemplateID)
 	}
