@@ -13,6 +13,14 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
+// encode runs f and reports whether it finished: a tag that has an action type
+// it cannot encode yet panics, and that fixture is left out.
+func encode(f func()) (ok bool) {
+	defer func() { ok = recover() == nil }()
+	f()
+	return true
+}
+
 func main() {
 	sword := flag.Int("stone-sword", 0, "stone sword runtime ID of this protocol")
 	rev := flag.String("revision", "", "gophertunnel commit")
@@ -31,8 +39,9 @@ func main() {
 	for name, as := range actions {
 		pk := &packet.ItemStackRequest{Requests: []protocol.ItemStackRequest{{RequestID: -3, Actions: as, FilterCause: -1}}}
 		buf := new(bytes.Buffer)
-		pk.Marshal(protocol.NewWriter(buf, 0))
-		out[name] = buf.Bytes()
+		if encode(func() { pk.Marshal(protocol.NewWriter(buf, 0)) }) {
+			out[name] = buf.Bytes()
+		}
 	}
 	damage := map[string][]byte{}
 	for name, pk := range damagePackets() {

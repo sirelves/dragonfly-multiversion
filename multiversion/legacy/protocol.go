@@ -38,7 +38,7 @@ func Protocols() []minecraft.Protocol {
 }
 
 // order lists the supported protocols, newest first.
-var order = []int32{582, 575, 568, 567, 560, 557, 554, 545, 544, 534, 527, 503, 486, 475, 471, 465, 448, 440, 431}
+var order = []int32{582, 575, 568, 567, 560, 557, 554, 545, 544, 534, 527, 503, 486, 475, 471, 465, 448, 440, 431, 428}
 
 var versions = map[int32]string{
 	582: "1.19.80",
@@ -60,6 +60,7 @@ var versions = map[int32]string{
 	448: "1.17.10",
 	440: "1.17.0",
 	431: "1.16.220",
+	428: "1.16.210",
 }
 
 func (p Protocol) ID() int32   { return p.id }
@@ -183,7 +184,7 @@ type delta struct {
 }
 
 // deltas is ordered newest first.
-var deltas = []delta{delta582, delta575, delta567, delta560, delta557, delta554, delta545, delta544, delta534, delta527, delta503, delta486, delta475, delta471, delta465, delta448, delta440, delta431}
+var deltas = []delta{delta582, delta575, delta567, delta560, delta557, delta554, delta545, delta544, delta534, delta527, delta503, delta486, delta475, delta471, delta465, delta448, delta440, delta431, delta428}
 
 // deltas returns the deltas between 1.20.0 and p, newest first.
 func (p Protocol) deltas() []delta {
