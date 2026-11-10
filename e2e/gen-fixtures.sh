@@ -13,6 +13,11 @@ damage=fixtures/damage.go.txt
 grep -q 'AttributeValue' "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol/attribute.go" || damage=fixtures/damage_old.go.txt
 cp "${FIXTURE_DAMAGE:-$damage}" "$dir/damage.go"
 src=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol
+if grep -q 'CraftRecipeOptionalStackRequestAction struct' "$src/item_stack.go" && ! grep -A3 'CraftRecipeOptionalStackRequestAction struct' "$src/item_stack.go" | grep -q RecipeNetworkID; then
+  # Before v1.21 the field is RequestID, written zigzag; CloudburstMC writes it
+  # unsigned. 0 encodes the same either way.
+  sed -i '' 's/CraftRecipeOptionalStackRequestAction{RecipeNetworkID: 123}/CraftRecipeOptionalStackRequestAction{}/' "$dir/actions.go"
+fi
 if ! grep -q 'FilterCause' "$src/item_stack.go"; then
   sed -i '' 's/, FilterCause: -1}}}/}}}/' "$dir/main.go"  # added in 554
 fi
