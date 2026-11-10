@@ -86,7 +86,14 @@ func stackReqAction786(r protocol.IO, x *protocol.StackRequestAction) {
 			return
 		}
 	}
-	r.Uint8(&id)
+	if p := ProtoOf(r); p != 0 && p < 486 {
+		if !legacyStackActionID(r, p, &id, *x == nil) {
+			r.InvalidValue(fmt.Sprintf("%T", *x), "legacy stack request action", "action did not exist at this protocol")
+			return
+		}
+	} else {
+		r.Uint8(&id)
+	}
 	if *x == nil {
 		if !lookupStackReqAction786(id, x) {
 			r.UnknownEnumOption(id, "v786 stack request action type")

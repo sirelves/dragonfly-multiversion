@@ -49,6 +49,9 @@ type LevelChunk struct{ v786.LevelChunk }
 
 func (pk *LevelChunk) Marshal(io protocol.IO) {
 	io.ChunkPos(&pk.Position)
+	if p := v786.ProtoOf(io); p != 0 && p < 486 && pk.SubChunkCount == v786.SubChunkRequestModeLimited786 {
+		pk.SubChunkCount = v786.SubChunkRequestModeLimitless786 // no limited mode before 486
+	}
 	io.Varuint32(&pk.SubChunkCount)
 	if pk.SubChunkCount == v786.SubChunkRequestModeLimited786 {
 		io.Uint16(&pk.HighestSubChunk)
