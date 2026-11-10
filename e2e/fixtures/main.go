@@ -39,14 +39,14 @@ func main() {
 	for name, as := range actions {
 		pk := &packet.ItemStackRequest{Requests: []protocol.ItemStackRequest{{RequestID: -3, Actions: as, FilterCause: -1}}}
 		buf := new(bytes.Buffer)
-		if encode(func() { pk.Marshal(protocol.NewWriter(buf, 0)) }) {
+		if encode(func() { encodePacket(pk, buf) }) {
 			out[name] = buf.Bytes()
 		}
 	}
 	damage := map[string][]byte{}
 	for name, pk := range damagePackets() {
 		buf := new(bytes.Buffer)
-		pk.Marshal(protocol.NewWriter(buf, 0))
+		encodePacket(pk, buf)
 		damage[name] = buf.Bytes()
 	}
 	_ = json.NewEncoder(os.Stdout).Encode(map[string]any{

@@ -5,17 +5,23 @@ set -euo pipefail
 cd "$(dirname "$0")"
 . ./lib.sh
 proto=$1 tag=${2:-$(e2e_tag "$1")}
+# has_field <file> <struct> <field>: whether the struct declares the field.
+has_field() { awk -v t="type $2 struct {" 'index($0, t) {f=1; next} f && /^}/ {f=0} f' "$1" | grep -qE "^[[:space:]]+$3[[:space:]]"; }
 dir=build/fixtures-$proto
 mkdir -p "$dir"
 cp fixtures/main.go "$dir/main.go"
 cp "${FIXTURE_ACTIONS:-fixtures/actions.go.txt}" "$dir/actions.go"
+pk=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol
+if grep -q 'Marshal(buf \*bytes.Buffer)' "$pk/packet/packet.go"; then cp fixtures/encode_buf.go.txt "$dir/encode.go"
+elif grep -q 'shieldID int32' "$pk/writer.go"; then cp fixtures/encode_shield.go.txt "$dir/encode.go"
+else cp fixtures/encode_plain.go.txt "$dir/encode.go"; fi
 damage=fixtures/damage.go.txt
 grep -q 'AttributeValue' "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol/attribute.go" || damage=fixtures/damage_old.go.txt
 cp "${FIXTURE_DAMAGE:-$damage}" "$dir/damage.go"
 src=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol
 # AutoCraftRecipe gained TimesCrafted in 448 (CloudburstMC); gophertunnel
 # v1.14.3, the 448 tag, forgot it, so that tag cannot produce the action.
-if ! grep -A4 'type AutoCraftRecipeStackRequestAction struct' "$src/item_stack.go" | grep -q TimesCrafted; then
+if grep -q 'type AutoCraftRecipeStackRequestAction struct' "$src/item_stack.go" && ! has_field "$src/item_stack.go" AutoCraftRecipeStackRequestAction TimesCrafted; then
   if [ "$proto" = 448 ]; then
     sed -i '' '/"auto":/d' "$dir/actions.go"
   else
@@ -29,7 +35,7 @@ done
 # Before v1.21 the recipe actions named their ID RequestID and wrote it zigzag,
 # while CloudburstMC writes it unsigned; 0 encodes the same either way.
 for t in CraftRecipeStackRequestAction AutoCraftRecipeStackRequestAction CraftRecipeOptionalStackRequestAction CraftGrindstoneRecipeStackRequestAction; do
-  if grep -q "type $t struct" "$src/item_stack.go" && ! grep -A4 "type $t struct" "$src/item_stack.go" | grep -q RecipeNetworkID; then
+  if grep -q "type $t struct" "$src/item_stack.go" && ! has_field "$src/item_stack.go" "$t" RecipeNetworkID; then
     sed -i '' "s/$t{RecipeNetworkID: 123, /$t{/; s/$t{RecipeNetworkID: 123}/$t{}/" "$dir/actions.go"
   fi
 done

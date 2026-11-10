@@ -66,3 +66,8 @@ fill client StructureTemplateDataResponse <=475
 # writes the empty slice it started from, so its re-encode drops NBT and the
 # can-place/can-break lists.
 fill server CreativeContent 431,440,448
+# gophertunnel <= v1.8.2 decodes the StartGame block palette into maps and
+# re-encodes it with another key order; the decode itself consumes every byte.
+zero server StartGame 407,408
+# The old clients' StartGame is never sent to the server.
+zero client StartGame 407,408

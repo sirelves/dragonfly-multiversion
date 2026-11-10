@@ -1,0 +1,10 @@
+package main
+
+import (
+	"bytes"
+
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+)
+
+func encodePacket(pk packet.Packet, buf *bytes.Buffer) { pk.Marshal(protocol.NewWriter(buf, 0)) }
