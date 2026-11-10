@@ -113,11 +113,7 @@ func (l *legacyRakNetListener) accept() {
 				// Clients before 1.19.30 skip RequestNetworkSettings: their first
 				// batch is already compressed and carries the Login.
 				if proto, ok := preSettingsLogin(first); ok {
-					select {
-					case l.route(proto) <- newPreSettingsRakNetConn(c, first, proto):
-					case <-l.done:
-						_ = c.Close()
-					}
+					l.handOff(proto, newPreSettingsRakNetConn(c, first, proto))
 					return
 				}
 				_ = c.Close()
@@ -131,25 +127,44 @@ func (l *legacyRakNetListener) accept() {
 				return
 			}
 			version := int32(binary.BigEndian.Uint32(buf.Bytes()))
+			if version <= 0 {
+				_ = c.Close()
+				return
+			}
 			var prepared net.Conn = &rakNetReplay{Conn: c, first: first}
 			if version < 649 {
 				prepared = newLegacyRakNetConn(c, first, version)
 			}
-			select {
-			case l.route(version) <- prepared:
-			case <-l.done:
-				_ = prepared.Close()
-			}
+			l.handOff(version, prepared)
 		}()
 	}
 }
 
-// route returns the channel a client of protocol proto is handed to.
+// route returns the channel a client of protocol proto is handed to. Only a
+// split listener (offlineBelow > 0) has an offline side.
 func (l *legacyRakNetListener) route(proto int32) chan net.Conn {
-	if proto < l.offlineBelow {
+	if l.offlineBelow > 0 && proto < l.offlineBelow {
 		return l.offline
 	}
 	return l.ready
+}
+
+// handOff gives c to the listener side of proto, closing it if nobody takes
+// it within the login timeout or the listener closes.
+func (l *legacyRakNetListener) handOff(proto int32, c net.Conn) {
+	ch := l.route(proto)
+	if lc, ok := c.(*legacyRakNetConn); ok && ch == l.offline {
+		lc.offline.Store(true) // before its Login is read
+	}
+	t := time.NewTimer(10 * time.Second)
+	defer t.Stop()
+	select {
+	case ch <- c:
+	case <-l.done:
+		_ = c.Close()
+	case <-t.C:
+		_ = c.Close()
+	}
 }
 
 func (l *legacyRakNetListener) Accept() (net.Conn, error) {
@@ -218,6 +233,8 @@ type legacyRakNetConn struct {
 	// proto is the client protocol; before 1.16.220 packets are encrypted
 	// with AES-CFB8 instead of AES-CTR.
 	proto int32
+	// offline is set when the conn goes to the listener without Xbox Live.
+	offline atomic.Bool
 	reads       chan legacyBatchResult
 	done        chan struct{}
 	once        sync.Once
@@ -361,11 +378,22 @@ func (c *legacyRakNetConn) incoming(data []byte) ([]byte, error) {
 			if err := decodeLegacyPacket(buf, &request); err != nil {
 				return nil, err
 			}
-			_, _, auth, err := login.Parse(request.ConnectionRequest, nil)
+			identity, client, auth, err := login.Parse(request.ConnectionRequest, nil)
 			if err != nil {
 				return nil, fmt.Errorf("legacy login: %w", err)
 			}
 			c.clientKey.Store(auth.PublicKey)
+			if c.offline.Load() && !auth.XBOXLiveAuthenticated {
+				// Nothing vouches for an offline client's XUID: re-sign its login
+				// without one, so no XUID-keyed identity can be claimed.
+				key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+				if err != nil {
+					return nil, err
+				}
+				identity.XUID = ""
+				request.ConnectionRequest = login.EncodeOffline(identity, client, key, true)
+				pk = encodeLegacyPacket(&request)
+			}
 		case packet.IDClientToServerHandshake:
 			if crypto == nil || len(pk) != 1 {
 				return nil, fmt.Errorf("invalid legacy encrypted handshake")

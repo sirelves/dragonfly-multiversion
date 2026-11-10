@@ -244,7 +244,52 @@ func TestRakNetSplitRoutesByProtocol(t *testing.T) {
 		}
 	}
 	unsplit := &legacyRakNetListener{ready: make(chan net.Conn), offline: make(chan net.Conn)}
-	if unsplit.route(407) != unsplit.ready {
-		t.Error("an unsplit listener sent an old client to the offline side")
+	for _, proto := range []int32{407, -5, 0} {
+		if unsplit.route(proto) != unsplit.ready {
+			t.Errorf("an unsplit listener sent protocol %d to the offline side nobody reads", proto)
+		}
+	}
+}
+
+func TestOfflineLoginLosesItsXUID(t *testing.T) {
+	key, _ := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	identity := login.IdentityData{DisplayName: "Steve", Identity: "8e6f1b2a-0000-4000-8000-000000000001", XUID: "2535400000000000"}
+	req := login.EncodeOffline(identity, login.ClientData{GameVersion: "1.16.0", DeviceOS: 1, DeviceID: "e2e", LanguageCode: "en_US", ServerAddress: "127.0.0.1:19132",
+		SkinID: "s", SkinImageWidth: 64, SkinImageHeight: 32, SkinData: base64.StdEncoding.EncodeToString(make([]byte, 64*32*4)),
+		SkinResourcePatch: base64.StdEncoding.EncodeToString([]byte(`{"geometry":{"default":"geometry.humanoid.custom"}}`))}, key, true)
+	raw := packLegacyBatch([][]byte{encodeLegacyPacket(&packet.Login{ClientProtocol: 407, ConnectionRequest: req})})
+	body, err := packet.FlateCompression.Compress(raw[1:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, offline := range []bool{true, false} {
+		c := &legacyRakNetConn{handshake: make(chan struct{}), settled: make(chan struct{}), proto: 407}
+		c.compressed.Store(true)
+		c.offline.Store(offline)
+		out, err := c.incoming(append([]byte{0xfe}, body...))
+		if err != nil {
+			t.Fatal(err)
+		}
+		pks, err := unpackLegacyBatch(append([]byte{0xfe}, out[2:]...))
+		if err != nil || len(pks) != 1 {
+			t.Fatalf("batch: %v", err)
+		}
+		buf := bytes.NewBuffer(pks[0])
+		var h packet.Header
+		_ = h.Read(buf)
+		var got packet.Login
+		if err := decodeLegacyPacket(buf, &got); err != nil {
+			t.Fatal(err)
+		}
+		parsed, _, _, err := login.Parse(got.ConnectionRequest, nil)
+		if err != nil {
+			t.Fatalf("rewritten login does not parse: %v", err)
+		}
+		if want := map[bool]string{true: "", false: identity.XUID}[offline]; parsed.XUID != want || parsed.DisplayName != "Steve" {
+			t.Errorf("offline=%v: XUID %q name %q, want XUID %q", offline, parsed.XUID, parsed.DisplayName, want)
+		}
+		if !c.clientKey.Load().Equal(&key.PublicKey) {
+			t.Error("the client key used for encryption changed")
+		}
 	}
 }
