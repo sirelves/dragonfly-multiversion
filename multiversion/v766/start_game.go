@@ -156,5 +156,7 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.UUID(&pk.WorldTemplateID)
 	io.Bool(&pk.ClientSideGeneration)
 	io.Bool(&pk.UseBlockNetworkIDHashes)
-	io.Bool(&pk.ServerAuthoritativeSound)
+	if p := v786.ProtoOf(io); p == 0 || p >= 589 { // added in 589
+		io.Bool(&pk.ServerAuthoritativeSound)
+	}
 }

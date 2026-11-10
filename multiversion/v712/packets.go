@@ -134,8 +134,10 @@ func (*Emote) ID() uint32 { return v786.IDEmote }
 func (pk *Emote) Marshal(io protocol.IO) {
 	io.Varuint64(&pk.EntityRuntimeID)
 	io.String(&pk.EmoteID)
-	io.String(&pk.XUID)
-	io.String(&pk.PlatformID)
+	if p := v786.ProtoOf(io); p == 0 || p >= 589 { // added in 589
+		io.String(&pk.XUID)
+		io.String(&pk.PlatformID)
+	}
 	io.Uint8(&pk.Flags)
 }
 
