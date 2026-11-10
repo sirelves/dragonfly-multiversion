@@ -62,3 +62,7 @@ zero server StructureTemplateDataRequest <=475
 fill server StructureTemplateDataRequest <=475
 zero client StructureTemplateDataResponse <=475
 fill client StructureTemplateDataResponse <=475
+# gophertunnel v1.12.4–v1.14.3 builds the item extra data in a buffer and then
+# writes the empty slice it started from, so its re-encode drops NBT and the
+# can-place/can-break lists.
+fill server CreativeContent 431,440,448

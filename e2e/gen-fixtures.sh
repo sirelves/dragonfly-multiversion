@@ -26,16 +26,36 @@ fi
 for t in $(grep -oE 'protocol\.[A-Za-z]+StackRequestAction\{' "$dir/actions.go" | sed 's/protocol\.//; s/{//' | sort -u); do
   grep -q "type $t struct" "$src"/*.go || sed -i '' "/protocol\.$t{/d" "$dir/actions.go"
 done
-if grep -q 'CraftRecipeOptionalStackRequestAction struct' "$src/item_stack.go" && ! grep -A3 'CraftRecipeOptionalStackRequestAction struct' "$src/item_stack.go" | grep -q RecipeNetworkID; then
-  # Before v1.21 the field is RequestID, written zigzag; CloudburstMC writes it
-  # unsigned. 0 encodes the same either way.
-  sed -i '' 's/CraftRecipeOptionalStackRequestAction{RecipeNetworkID: 123}/CraftRecipeOptionalStackRequestAction{}/' "$dir/actions.go"
-fi
+# Before v1.21 the recipe actions named their ID RequestID and wrote it zigzag,
+# while CloudburstMC writes it unsigned; 0 encodes the same either way.
+for t in CraftRecipeStackRequestAction AutoCraftRecipeStackRequestAction CraftRecipeOptionalStackRequestAction CraftGrindstoneRecipeStackRequestAction; do
+  if grep -q "type $t struct" "$src/item_stack.go" && ! grep -A4 "type $t struct" "$src/item_stack.go" | grep -q RecipeNetworkID; then
+    sed -i '' "s/$t{RecipeNetworkID: 123, /$t{/; s/$t{RecipeNetworkID: 123}/$t{}/" "$dir/actions.go"
+  fi
+done
 if ! grep -q 'FilterCause' "$src/item_stack.go"; then
   sed -i '' 's/, FilterCause: -1}}}/}}}/' "$dir/main.go"  # added in 554
 fi
 if [ ! -f "$dir/go.mod" ]; then
   (cd "$dir" && go mod init fixtures >/dev/null 2>&1 && go get "github.com/sandertv/gophertunnel@$tag" >/dev/null 2>&1 && go mod tidy >/dev/null 2>&1)
+fi
+# gophertunnel v1.12.4–v1.14.3 writes an empty item extra data (it encodes into
+# a buffer, then writes the slice it started from). Fix that line in a copy of
+# the tag so the fixtures carry the bytes a real client sends.
+if sed -n '/^func (w \*Writer) Item(/,/^}/p' "$src/../protocol/writer.go" 2>/dev/null | grep -q 'w.ByteSlice(&extraData)'; then
+  fixed=$PWD/build/gt-$tag
+  if [ ! -d "$fixed" ]; then
+    cp -r "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag" "$fixed" && chmod -R u+w "$fixed"
+    python3 - "$fixed/minecraft/protocol/writer.go" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+i = s.index("func (w *Writer) Item(")
+j = s.index("w.ByteSlice(&extraData)", i)
+s = s[:j] + "extraData = buf.Bytes()\n\tw.ByteSlice(&extraData)" + s[j + len("w.ByteSlice(&extraData)"):]
+open(p, "w").write(s)
+PY
+  fi
+  (cd "$dir" && go mod edit -replace "github.com/sandertv/gophertunnel=$fixed" && go mod tidy >/dev/null 2>&1)
 fi
 rev=$(git -C "$(e2e_gt_history)" rev-parse "$tag^{commit}")
 file=../multiversion/itemdata/runtime_item_states_$proto.json
