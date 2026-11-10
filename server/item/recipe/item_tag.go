@@ -70,3 +70,9 @@ func (i ItemTag) Contains(name string) bool {
 	}
 	return false
 }
+
+// ItemTagItems returns the names of the items that belong to tag, for
+// protocols that cannot reference tags and must list items instead.
+func ItemTagItems(tag string) []string {
+	return append([]string(nil), itemTags[tag]...)
+}
