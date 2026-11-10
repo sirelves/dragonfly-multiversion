@@ -93,8 +93,33 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) []pa
 			pks = apply(pks, uint32(p.id), d.fromLatest)
 		}
 	}
-	return pks
+	return p.knownOnly(pks)
 }
+
+// knownOnly drops packets the client of p has no decoder for: newer server
+// features have nothing to say to an older client.
+func (p Protocol) knownOnly(pks []packet.Packet) []packet.Packet {
+	known := knownSets[p.id]
+	out := pks[:0]
+	for _, pk := range pks {
+		if _, ok := known[pk.ID()]; ok {
+			out = append(out, pk)
+		}
+	}
+	return out
+}
+
+var knownSets = func() map[int32]map[uint32]struct{} {
+	m := make(map[int32]map[uint32]struct{}, len(knownIDs))
+	for proto, ids := range knownIDs {
+		set := make(map[uint32]struct{}, len(ids))
+		for _, id := range ids {
+			set[id] = struct{}{}
+		}
+		m[proto] = set
+	}
+	return m
+}()
 
 func apply(pks []packet.Packet, proto uint32, f func(proto uint32, pk packet.Packet) []packet.Packet) []packet.Packet {
 	out := pks[:0:0]
