@@ -40,7 +40,9 @@ func (pk *PlayerAction) Marshal(io protocol.IO) {
 	io.Varuint64(&pk.EntityRuntimeID)
 	io.Varint32(&pk.ActionType)
 	UBlockPos786(io, &pk.BlockPosition)
-	UBlockPos786(io, &pk.ResultPosition)
+	if p := ProtoOf(io); p == 0 || p >= 527 { // added in 527
+		UBlockPos786(io, &pk.ResultPosition)
+	}
 	io.Varint32(&pk.BlockFace)
 }
 

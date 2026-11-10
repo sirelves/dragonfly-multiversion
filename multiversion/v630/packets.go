@@ -71,7 +71,9 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	io.Varuint64(&pk.InputData)
 	io.Varuint32(&pk.InputMode)
 	io.Varuint32(&pk.PlayMode)
-	io.Varuint32(&pk.InteractionModel)
+	if p := v786.ProtoOf(io); p == 0 || p >= 527 { // added in 527
+		io.Varuint32(&pk.InteractionModel)
+	}
 	if pk.PlayMode == packet.PlayModeReality {
 		io.Vec3(&pk.GazeDirection)
 	}

@@ -161,9 +161,13 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.String(&pk.MultiPlayerCorrelationID)
 	io.Bool(&pk.ServerAuthoritativeInventory)
 	io.String(&pk.GameVersion)
-	io.NBT(&pk.PropertyData, nbt.NetworkLittleEndian)
+	if p := v786.ProtoOf(io); p == 0 || p >= 527 { // added in 527
+		io.NBT(&pk.PropertyData, nbt.NetworkLittleEndian)
+	}
 	io.Uint64(&pk.ServerBlockStateChecksum)
-	io.UUID(&pk.WorldTemplateID)
+	if p := v786.ProtoOf(io); p == 0 || p >= 527 { // added in 527
+		io.UUID(&pk.WorldTemplateID)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 544 { // added in 544
 		io.Bool(&pk.ClientSideGeneration)
 	}
