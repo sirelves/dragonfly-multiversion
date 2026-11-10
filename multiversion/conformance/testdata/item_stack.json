@@ -156,6 +156,31 @@
     "revision": "8c30047d86617a56e1f1871e3a1d47ec4f670d99",
     "stone_sword": 343
   },
+  "486": {
+    "fixtures": {
+      "auto": "AQUBDXsBAA==",
+      "beacon": "AQUBCgAAAA==",
+      "consume": "AQUBBQAAAAAA",
+      "create": "AQUBBgAA",
+      "creative": "AQUBDocDAA==",
+      "creative_take": "AQUDDocDEwHwBAEAAAAKAAAAAAAAAAAAAAEAATwyBRwAAAA=",
+      "destroy": "AQUBBAAAAAAA",
+      "drop": "AQUBAwAAAAAAAA==",
+      "grindstone": "AQUBEHsGAA==",
+      "lab": "AQUBCQA=",
+      "loom": "AQUBEQNjcmUA",
+      "mine": "AQUBCwAAAAA=",
+      "nonimplemented": "AQUBEgA=",
+      "optional": "AQUBDwAAAAAAAA==",
+      "place": "AQUBAQAAAAAAAAAA",
+      "recipe": "AQUBDHsA",
+      "results": "AQUBEwHwBAEAAAAKAAAAAAAAAAAAAAEA",
+      "swap": "AQUBAgAAAAAAAAA=",
+      "take": "AQUBAAE8MgUcAAAA"
+    },
+    "revision": "2cb1e399e53928529916dd2bda1efd11a0ac374d",
+    "stone_sword": 312
+  },
   "503": {
     "fixtures": {
       "auto": "AQUBDXsBAA==",

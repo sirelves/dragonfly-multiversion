@@ -107,7 +107,9 @@ func (pk *AddPlayer527) Marshal(io protocol.IO) {
 	io.Float32(&pk.Yaw)
 	io.Float32(&pk.HeadYaw)
 	io.ItemInstance(&pk.HeldItem)
-	io.Varint32(&pk.GameType)
+	if p := v786.ProtoOf(io); p == 0 || p >= 503 { // added in 503
+		io.Varint32(&pk.GameType)
+	}
 	io.EntityMetadata(&pk.EntityMetadata)
 	io.Varuint32(&pk.Adventure.Flags)
 	io.Varuint32(&pk.Adventure.CommandPermissionLevel)
