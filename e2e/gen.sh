@@ -10,6 +10,11 @@ mkdir -p "$dir" bin
 (cd /tmp && go mod download "github.com/sandertv/gophertunnel@$tag" >/dev/null 2>&1) || true
 cp client/main.go "$dir/main.go"
 cp client/chunk.go "$dir/chunk.go"
+if grep -q 'func (d Dialer) DialTimeout' "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/dial.go" 2>/dev/null; then
+  cp client/dial_timeout.go.txt "$dir/dial.go"
+else
+  cp client/dial_plain.go.txt "$dir/dial.go"
+fi
 rm -f "$dir"/errlog*.go
 if grep -q "ErrorLog \*slog.Logger" "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/dial.go" 2>/dev/null; then
   cp client/errlog_slog.go.txt "$dir/errlog.go"
@@ -40,7 +45,13 @@ PY
 fi
 if [ "$legacy" = 1 ]; then
   # Old go-raknet dialers lack RakNet security cookies; use the patched copy.
-  (cd "$dir" && go mod edit -replace github.com/sandertv/go-raknet=../../raknet-client && go mod tidy >/dev/null)
+  rk=../../raknet-client
+  case $(cd "$dir" && go list -m -f '{{.Version}}' github.com/sandertv/go-raknet 2>/dev/null) in
+    v1.7.[0-9]) rk=../../raknet-client-v17 ;; # the listener API of the 1.16.0 tags
+  esac
+  (cd "$dir" && go mod edit -dropreplace github.com/sandertv/go-raknet && go mod tidy >/dev/null 2>&1; \
+    case $(go list -m -f '{{.Version}}' github.com/sandertv/go-raknet) in v1.7.[0-9]) rk=../../raknet-client-v17 ;; esac; \
+    go mod edit -replace github.com/sandertv/go-raknet=$rk && go mod tidy >/dev/null)
 fi
 (cd "$dir" && go build -o "../../bin/client-$proto" .)
 echo "built bin/client-$proto ($tag)"

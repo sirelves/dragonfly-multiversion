@@ -1,0 +1,13 @@
+package main
+
+import (
+	"time"
+
+	"github.com/sandertv/gophertunnel/minecraft"
+)
+
+func dial(d minecraft.Dialer, addr string, t time.Duration) (*minecraft.Conn, error) {
+	return d.DialTimeout("raknet", addr, t)
+}
+
+func spawn(c *minecraft.Conn, t time.Duration) error { return c.DoSpawnTimeout(t) }

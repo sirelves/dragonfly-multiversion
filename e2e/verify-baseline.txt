@@ -71,3 +71,8 @@ fill server CreativeContent 431,440,448
 zero server StartGame 407,408
 # The old clients' StartGame is never sent to the server.
 zero client StartGame 407,408
+# gophertunnel v1.7.11 decodes StructureTemplateDataResponse.Success into a
+# local variable, and its UpdateEquip copies the trailing inventory NBT without
+# consuming it, so both re-encode or report bytes differently.
+fill server StructureTemplateDataResponse 407
+fill server UpdateEquip 407

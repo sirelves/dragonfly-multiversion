@@ -41,12 +41,19 @@ func main() {
 	sink := &errSink{}
 	d := minecraft.Dialer{ErrorLog: newErrLog(sink)}
 	d.IdentityData.DisplayName = *name
-	conn, err := d.DialTimeout("raknet", *addr, 20*time.Second)
+	// Real clients always send an identity UUID; the 1.16.0 tags do not make one
+	// for offline logins.
+	var h uint64 = 1469598103934665603
+	for _, c := range *name {
+		h = (h ^ uint64(c)) * 1099511628211
+	}
+	d.IdentityData.Identity = fmt.Sprintf("%08x-0000-4000-8000-%012x", uint32(h>>32), h&0xffffffffffff)
+	conn, err := dial(d, *addr, 20*time.Second)
 	if err != nil {
 		fail("dial: %v\n%s", err, strings.TrimSpace(sink.buf.String()))
 	}
 	defer conn.Close()
-	if err := conn.DoSpawnTimeout(20 * time.Second); err != nil {
+	if err := spawn(conn, 20*time.Second); err != nil {
 		fail("spawn: %v\n%s", err, strings.TrimSpace(sink.buf.String()))
 	}
 	gd := conn.GameData()

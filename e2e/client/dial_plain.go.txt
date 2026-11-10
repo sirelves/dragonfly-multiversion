@@ -1,0 +1,14 @@
+package main
+
+import (
+	"time"
+
+	"github.com/sandertv/gophertunnel/minecraft"
+)
+
+// The 1.16.0 tags have no timeout variants.
+func dial(d minecraft.Dialer, addr string, _ time.Duration) (*minecraft.Conn, error) {
+	return d.Dial("raknet", addr)
+}
+
+func spawn(c *minecraft.Conn, _ time.Duration) error { return c.DoSpawn() }
