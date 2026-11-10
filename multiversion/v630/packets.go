@@ -86,7 +86,9 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	if pk.InputData&(1<<35) != 0 {
 		v786.PlayerBlockActions786(io, &pk.BlockActions)
 	}
-	io.Vec2(&pk.AnalogueMoveVector)
+	if p := v786.ProtoOf(io); p == 0 || p >= 575 { // added in 575
+		io.Vec2(&pk.AnalogueMoveVector)
+	}
 }
 
 type PlayerList struct{ v786.PlayerList }
