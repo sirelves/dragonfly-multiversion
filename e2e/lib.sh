@@ -37,3 +37,8 @@ e2e_gt_history() {
   [ -d "$dir/.git" ] || git clone -q https://github.com/Sandertv/gophertunnel.git "$dir"
   echo "$dir"
 }
+
+# e2e_expect <protocol>: packets a client of that protocol must receive.
+e2e_expect() {
+  if [ "$1" -lt 534 ]; then echo AdventureSettings; else echo UpdateAbilities; fi
+}

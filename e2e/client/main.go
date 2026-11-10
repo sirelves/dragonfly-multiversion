@@ -35,6 +35,7 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:19132", "server address")
 	name := flag.String("name", "e2e", "display name")
 	dur := flag.Duration("for", 6*time.Second, "time to stay connected after spawn")
+	expect := flag.String("expect", "", "comma-separated packet types that must arrive, e.g. AdventureSettings")
 	flag.Parse()
 
 	sink := &errSink{}
@@ -94,6 +95,11 @@ func main() {
 	sort.Strings(keys)
 	for _, k := range keys {
 		fmt.Printf("PACKET %s %d\n", k, counts[k])
+	}
+	for _, want := range strings.Split(*expect, ",") {
+		if want != "" && counts["*packet."+want] == 0 {
+			sink.Write([]byte("expected packet never arrived: " + want + "\n"))
+		}
 	}
 	if s := strings.TrimSpace(sink.buf.String()); s != "" {
 		fmt.Println("ERRORS")
