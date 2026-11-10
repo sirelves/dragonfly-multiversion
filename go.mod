@@ -55,3 +55,5 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
+
+replace github.com/sandertv/go-raknet => ./third_party/go-raknet
