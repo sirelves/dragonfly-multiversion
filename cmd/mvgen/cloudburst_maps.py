@@ -33,7 +33,7 @@ def table(name, v):
         res = table(name, prev[-1]) if prev else {}
     else:
         body = m.group(1)
-        base = re.match(r"\s*(?:Bedrock_v(\d+)\.%s\.toBuilder\(\)|TypeMap\.builder\([^)]*\))" % name, body)
+        base = re.match(r"\s*(?:Bedrock_v(\d+)\.%s\s*\.toBuilder\(\)|TypeMap\.builder\([^)]*\))" % name, body)
         assert base, (name, v, body[:80])
         res = dict(table(name, int(base.group(1)))) if base.group(1) else {}
         enum = TABLES[name]
