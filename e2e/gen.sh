@@ -20,6 +20,24 @@ fi
 if [ ! -f "$dir/go.mod" ]; then
   (cd "$dir" && go mod init e2eclient >/dev/null 2>&1 && go get "github.com/sandertv/gophertunnel@$tag" >/dev/null && go mod tidy >/dev/null)
 fi
+# gophertunnel before v1.13 links crypto/cipher.xorBytes, which Go removed;
+# build against a copy that carries its own.
+gcm=$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/protocol/packet/gcm.go
+if grep -q 'go:linkname xorBytes' "$gcm" 2>/dev/null; then
+  fixed=$PWD/build/gt-$tag-xor
+  if [ ! -d "$fixed" ]; then
+    cp -r "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag" "$fixed" && chmod -R u+w "$fixed"
+    python3 - "$fixed/minecraft/protocol/packet/gcm.go" <<'PY'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+s = re.sub(r"//go:linkname xorBytes crypto/cipher.xorBytes\n(?://[^\n]*\n)*func xorBytes\(dst, a, b \[\]byte\) int\n",
+           "func xorBytes(dst, a, b []byte) int {\n\tn := len(a)\n\tif len(b) < n {\n\t\tn = len(b)\n\t}\n\tfor i := 0; i < n; i++ {\n\t\tdst[i] = a[i] ^ b[i]\n\t}\n\treturn n\n}\n", s)
+s = s.replace('_ "unsafe"\n', "").replace('\t_ "unsafe"\n', "")
+open(p, "w").write(s)
+PY
+  fi
+  (cd "$dir" && go mod edit -replace "github.com/sandertv/gophertunnel=$fixed" && go mod tidy >/dev/null 2>&1)
+fi
 if [ "$legacy" = 1 ]; then
   # Old go-raknet dialers lack RakNet security cookies; use the patched copy.
   (cd "$dir" && go mod edit -replace github.com/sandertv/go-raknet=../../raknet-client && go mod tidy >/dev/null)
