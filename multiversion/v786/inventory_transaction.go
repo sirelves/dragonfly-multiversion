@@ -42,7 +42,20 @@ func (pk *InventoryTransaction) Marshal(io protocol.IO) {
 		protocol.Slice(io, &pk.LegacySetItemSlots)
 	}
 	transactionDataType786(io, &pk.TransactionData)
-	protocol.Slice(io, &pk.Actions)
+	if p := ProtoOf(io); p != 0 && p < 431 {
+		// Before 431 a flag said whether each action carries the stack network
+		// ID of its new item, written after both items.
+		var netIDs bool
+		io.Bool(&netIDs)
+		protocol.FuncIOSlice(io, &pk.Actions, func(io protocol.IO, a *InventoryAction786) {
+			a.Marshal(io)
+			if netIDs {
+				io.Varint32(&a.NewItem.StackNetworkID)
+			}
+		})
+	} else {
+		protocol.Slice(io, &pk.Actions)
+	}
 	if pk.TransactionData != nil {
 		pk.TransactionData.Marshal(io)
 	}

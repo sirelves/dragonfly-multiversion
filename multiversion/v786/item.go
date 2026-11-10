@@ -214,11 +214,20 @@ type Reader786 struct {
 }
 
 func (r Reader786) Item(x *protocol.ItemStack) {
-	readItem786(r.Reader, itemdata.ShieldID(r.Proto), x)
+	if r.Proto != 0 && r.Proto < 431 {
+		ReadItem407(r.Reader, itemdata.ShieldID(r.Proto), x)
+	} else {
+		readItem786(r.Reader, itemdata.ShieldID(r.Proto), x)
+	}
 	untranslateItemIDs(r.Proto, x)
 }
 func (r Reader786) ItemInstance(i *protocol.ItemInstance) {
-	readItemInstance786(r.Reader, itemdata.ShieldID(r.Proto), i)
+	if r.Proto != 0 && r.Proto < 431 { // a bare item; net items are packet-level
+		*i = protocol.ItemInstance{}
+		ReadItem407(r.Reader, itemdata.ShieldID(r.Proto), &i.Stack)
+	} else {
+		readItemInstance786(r.Reader, itemdata.ShieldID(r.Proto), i)
+	}
 	untranslateItemIDs(r.Proto, &i.Stack)
 }
 func (r Reader786) EntityMetadata(x *protocol.EntityMetadata) { readEntityMetadata786(r.Reader, x) }
@@ -231,11 +240,19 @@ type Writer786 struct {
 
 func (w Writer786) Item(x *protocol.ItemStack) {
 	cp := translateItemIDs(w.Proto, *x)
+	if w.Proto != 0 && w.Proto < 431 {
+		WriteItem407(w.Writer, itemdata.ShieldID(w.Proto), &cp)
+		return
+	}
 	writeItem786(w.Writer, itemdata.ShieldID(w.Proto), &cp)
 }
 func (w Writer786) ItemInstance(i *protocol.ItemInstance) {
 	cp := *i
 	cp.Stack = translateItemIDs(w.Proto, i.Stack)
+	if w.Proto != 0 && w.Proto < 431 {
+		WriteItem407(w.Writer, itemdata.ShieldID(w.Proto), &cp.Stack)
+		return
+	}
 	writeItemInstance786(w.Writer, itemdata.ShieldID(w.Proto), &cp)
 }
 func (w Writer786) EntityMetadata(x *protocol.EntityMetadata) { writeEntityMetadata786(w.Writer, x) }
