@@ -151,7 +151,9 @@ func stackReqAction786(r protocol.IO, x *protocol.StackRequestAction) {
 			a.NumberOfCrafts = 1
 		}
 		timesCrafted := a.NumberOfCrafts
-		r.Uint8(&timesCrafted)
+		if p := ProtoOf(r); p == 0 || p >= 448 { // added in 448
+			r.Uint8(&timesCrafted)
+		}
 		if p := ProtoOf(r); p != 0 && p < 712 {
 			a.NumberOfCrafts = timesCrafted
 		}
