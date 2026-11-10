@@ -31,6 +31,10 @@ func (w Writer786) ItemDescriptorCount(x *protocol.ItemDescriptorCount) {
 		w.Writer.ItemDescriptorCount(x)
 		return
 	}
+	if w.Proto < 554 {
+		writeIngredient407(w, x)
+		return
+	}
 	var kind byte
 	switch x.Descriptor.(type) {
 	case nil, *protocol.InvalidItemDescriptor:
@@ -74,6 +78,10 @@ func (r Reader786) ItemDescriptorCount(x *protocol.ItemDescriptorCount) {
 		r.Reader.ItemDescriptorCount(x)
 		return
 	}
+	if r.Proto < 554 {
+		readIngredient407(r, x)
+		return
+	}
 	var kind byte
 	r.Uint8(&kind)
 	switch kind {
@@ -112,4 +120,50 @@ func (r Reader786) ItemDescriptorCount(x *protocol.ItemDescriptorCount) {
 		return
 	}
 	r.Varint32(&x.Count)
+}
+
+// Before 1.19.30 (554) an ingredient was a bare item: varint network ID and,
+// unless air, varint metadata (0x7fff for any) and varint count. Only default
+// descriptors fit; callers must expand tags beforehand.
+func writeIngredient407(w Writer786, x *protocol.ItemDescriptorCount) {
+	d, ok := x.Descriptor.(*protocol.DefaultItemDescriptor)
+	var id int32
+	var meta uint32
+	if ok {
+		native, _ := world.ItemRuntimeIDByName(d.Name)
+		id, meta = itemdata.TranslateStack(w.Proto, native, uint32(d.MetadataValue))
+		if d.MetadataValue == 0x7fff || d.MetadataValue == -1 {
+			meta = 0x7fff
+		}
+	}
+	w.Varint32(&id)
+	if id == 0 {
+		return
+	}
+	aux := int32(meta)
+	w.Varint32(&aux)
+	count := x.Count
+	w.Varint32(&count)
+}
+
+func readIngredient407(r Reader786, x *protocol.ItemDescriptorCount) {
+	var id int32
+	r.Varint32(&id)
+	if id == 0 {
+		x.Descriptor, x.Count = &protocol.InvalidItemDescriptor{}, 0
+		return
+	}
+	var aux int32
+	r.Varint32(&aux)
+	r.Varint32(&x.Count)
+	meta := uint32(aux)
+	if aux == 0x7fff {
+		meta = 0
+	}
+	native, up := itemdata.ReverseTranslateStack(r.Proto, id, meta)
+	name, _ := world.ItemNameByRuntimeID(native)
+	if aux == 0x7fff {
+		up = 0x7fff
+	}
+	x.Descriptor = &protocol.DefaultItemDescriptor{Name: name, MetadataValue: int32(up)}
 }

@@ -141,7 +141,7 @@ func (*StructureTemplateDataRequest) ID() uint32 { return IDStructureTemplateDat
 func (pk *StructureTemplateDataRequest) Marshal(io protocol.IO) {
 	io.String(&pk.StructureName)
 	UBlockPos786(io, &pk.Position)
-	protocol.Single(io, &pk.Settings)
+	StructureSettings786(io, &pk.Settings)
 	io.Uint8(&pk.RequestType)
 }
 func toLatestStructureTemplateDataRequest(pk *StructureTemplateDataRequest) *packet.StructureTemplateDataRequest {

@@ -73,8 +73,31 @@ func (pk *StructureBlockUpdate) Marshal(io protocol.IO) {
 	io.Bool(&pk.IncludePlayers)
 	io.Bool(&pk.ShowBoundingBox)
 	io.Varint32(&pk.StructureBlockType)
-	protocol.Single(io, &pk.Settings)
+	StructureSettings786(io, &pk.Settings)
 	io.Varint32(&pk.RedstoneSaveMode)
 	io.Bool(&pk.ShouldTrigger)
-	io.Bool(&pk.Waterlogged)
+	if p := ProtoOf(io); p == 0 || p >= 554 { // added in 554
+		io.Bool(&pk.Waterlogged)
+	}
+}
+
+// StructureSettings786 is protocol.StructureSettings with the fields that older
+// protocols lack left out.
+func StructureSettings786(io protocol.IO, x *protocol.StructureSettings) {
+	io.String(&x.PaletteName)
+	io.Bool(&x.IgnoreEntities)
+	io.Bool(&x.IgnoreBlocks)
+	if p := ProtoOf(io); p == 0 || p >= 554 { // added in 554
+		io.Bool(&x.AllowNonTickingChunks)
+	}
+	io.BlockPos(&x.Size)
+	io.BlockPos(&x.Offset)
+	io.ActorUniqueID(&x.LastEditingPlayerUniqueID)
+	io.Uint8(&x.Rotation)
+	io.Uint8(&x.Mirror)
+	io.Uint8(&x.AnimationMode)
+	io.Float32(&x.AnimationDuration)
+	io.Float32(&x.Integrity)
+	io.Uint32(&x.Seed)
+	io.Vec3(&x.Pivot)
 }

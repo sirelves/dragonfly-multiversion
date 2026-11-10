@@ -48,7 +48,11 @@ func marshalItemStackRequest786(io protocol.IO, pk *protocol.ItemStackRequest) {
 		stackReqAction786(io, x)
 	})
 	protocol.FuncSlice(io, &pk.FilterStrings, io.String)
-	io.Int32(&pk.FilterCause)
+	if p := ProtoOf(io); p == 0 || p >= 554 { // added in 554
+		io.Int32(&pk.FilterCause)
+	} else {
+		pk.FilterCause = -1
+	}
 }
 
 func stackReqSlot786(r protocol.IO, x *protocol.StackRequestSlotInfo) {

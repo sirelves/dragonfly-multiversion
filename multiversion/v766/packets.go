@@ -217,10 +217,12 @@ func (pk *StructureBlockUpdate) Marshal(io protocol.IO) {
 	io.Bool(&pk.IncludePlayers)
 	io.Bool(&pk.ShowBoundingBox)
 	io.Varint32(&pk.StructureBlockType)
-	protocol.Single(io, &pk.Settings)
+	v786.StructureSettings786(io, &pk.Settings)
 	io.Varint32(&pk.RedstoneSaveMode)
 	io.Bool(&pk.ShouldTrigger)
-	io.Bool(&pk.Waterlogged)
+	if p := v786.ProtoOf(io); p == 0 || p >= 554 { // added in 554
+		io.Bool(&pk.Waterlogged)
+	}
 }
 
 func toLatestStructureBlockUpdate(pk *StructureBlockUpdate) *packet.StructureBlockUpdate {
