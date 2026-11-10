@@ -83,7 +83,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Varint32(&pk.Difficulty)
 	v786.UBlockPos786(io, &pk.WorldSpawn)
 	io.Bool(&pk.AchievementsDisabled)
-	if p := v786.ProtoOf(io); p != 0 && p < 618 {
+	if p := v786.ProtoOf(io); p != 0 && p < 534 {
+		// no editor flag before 534
+	} else if p != 0 && p < 618 {
 		editor := pk.EditorWorldType != 0
 		io.Bool(&editor)
 		if editor {

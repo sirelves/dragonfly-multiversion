@@ -65,7 +65,9 @@ func (pk *AddActor) Marshal(io protocol.IO) {
 	io.Float32(&pk.Pitch)
 	io.Float32(&pk.Yaw)
 	io.Float32(&pk.HeadYaw)
-	io.Float32(&pk.BodyYaw)
+	if p := ProtoOf(io); p == 0 || p >= 534 { // added in 534
+		io.Float32(&pk.BodyYaw)
+	}
 	protocol.Slice(io, &pk.Attributes)
 	io.EntityMetadata(&pk.EntityMetadata)
 	if p := ProtoOf(io); p == 0 || p >= 557 { // added in 557
