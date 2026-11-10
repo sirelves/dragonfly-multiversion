@@ -179,7 +179,7 @@ var versionedVanillaPacks = map[string]bool{
 //go:embed data/*
 var oldRegistries embed.FS
 
-var versions = map[uint32]string{582: "1.19.80", 589: "1.20.0", 594: "1.20.10", 598: "1.20.20", 618: "1.20.30", 622: "1.20.40", 630: "1.20.50"}
+var versions = map[uint32]string{575: "1.19.70", 582: "1.19.80", 589: "1.20.0", 594: "1.20.10", 598: "1.20.20", 618: "1.20.30", 622: "1.20.40", 630: "1.20.50"}
 
 type registry struct {
 	biomes, entities []byte
