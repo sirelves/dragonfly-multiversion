@@ -142,8 +142,10 @@ func (pk *SetTitle) Marshal(io protocol.IO) {
 	io.Varint32(&pk.FadeInDuration)
 	io.Varint32(&pk.RemainDuration)
 	io.Varint32(&pk.FadeOutDuration)
-	io.String(&pk.XUID)
-	io.String(&pk.PlatformOnlineID)
+	if p := v786.ProtoOf(io); p == 0 || p >= 448 { // added in 448
+		io.String(&pk.XUID)
+		io.String(&pk.PlatformOnlineID)
+	}
 }
 
 type StopSound struct {
@@ -295,7 +297,9 @@ func (pk *ResourcePacksInfo) Marshal(io protocol.IO) {
 		io.Bool(&pk.HasAddons)
 	}
 	io.Bool(&pk.HasScripts)
-	io.Bool(&pk.ForcingServerPacks)
+	if p := v786.ProtoOf(io); p == 0 || p >= 448 { // added in 448
+		io.Bool(&pk.ForcingServerPacks)
+	}
 	v786.SliceUint16Length786(io, &pk.BehaviourPacks)
 	v786.SliceUint16Length786(io, &pk.TexturePacks)
 	if p := v786.ProtoOf(io); p == 0 || p >= 618 {

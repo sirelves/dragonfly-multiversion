@@ -44,7 +44,13 @@ type Command786 struct {
 func (c *Command786) Marshal(r protocol.IO) {
 	r.String(&c.Name)
 	r.String(&c.Description)
-	r.Uint16(&c.Flags)
+	if p := ProtoOf(r); p != 0 && p < 448 { // a byte before 448
+		flags := uint8(c.Flags)
+		r.Uint8(&flags)
+		c.Flags = uint16(flags)
+	} else {
+		r.Uint16(&c.Flags)
+	}
 	r.Uint8(&c.PermissionLevel)
 	r.Uint32(&c.AliasesOffset)
 	if p := ProtoOf(r); p == 0 || p >= 594 {
