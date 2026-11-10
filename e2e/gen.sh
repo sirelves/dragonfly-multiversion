@@ -9,6 +9,7 @@ dir=build/$proto
 mkdir -p "$dir" bin
 (cd /tmp && go mod download "github.com/sandertv/gophertunnel@$tag" >/dev/null 2>&1) || true
 cp client/main.go "$dir/main.go"
+cp client/chunk.go "$dir/chunk.go"
 rm -f "$dir"/errlog*.go
 if grep -q "ErrorLog \*slog.Logger" "$(go env GOMODCACHE)/github.com/sandertv/gophertunnel@$tag/minecraft/dial.go" 2>/dev/null; then
   cp client/errlog_slog.go.txt "$dir/errlog.go"

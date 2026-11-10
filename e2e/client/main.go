@@ -80,6 +80,11 @@ func main() {
 			break
 		}
 		counts[fmt.Sprintf("%T", pk)]++
+		if lc, ok := pk.(*packet.LevelChunk); ok && protocol.CurrentProtocol < 475 && !lc.CacheEnabled {
+			if err := checkLegacyChunk(lc.SubChunkCount, lc.RawPayload); err != nil {
+				sink.Write([]byte("chunk: " + err.Error() + "\n"))
+			}
+		}
 		if t, ok := pk.(*packet.Text); ok && strings.Contains(t.Message, "hello from") {
 			fmt.Printf("CHAT %q\n", t.Message)
 		}
