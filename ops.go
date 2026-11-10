@@ -29,6 +29,10 @@ type ops struct {
 	mu   sync.RWMutex
 	path string
 	set  map[string]string // lower -> display nick
+	// requireXUID is set when Xbox Live is on: an operator must then hold one.
+	// Sessions that joined without Xbox Live (clients below
+	// Server.LegacyOfflineBelow) have none and so cannot claim an op's nick.
+	requireXUID bool
 }
 
 func loadOps(path string) *ops {
@@ -42,6 +46,11 @@ func loadOps(path string) *ops {
 		o.set[strings.ToLower(l)] = l
 	}
 	return o
+}
+
+// player reports whether the player named name, with XUID xuid, is an operator.
+func (o *ops) player(name, xuid string) bool {
+	return o.is(name) && (!o.requireXUID || xuid != "")
 }
 
 func (o *ops) is(name string) bool {

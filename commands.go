@@ -44,7 +44,7 @@ func registerCommands(srv *server.Server, o *ops) {
 
 func opOnly(o *ops, src cmd.Source) bool {
 	p, ok := src.(*player.Player)
-	return !ok || o.is(p.Name()) // console always, else an operator
+	return !ok || o.player(p.Name(), p.XUID()) // console always, else an operator
 }
 
 type aboutCmd struct{}

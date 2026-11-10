@@ -69,6 +69,7 @@ func main() {
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
 	operators := loadOps("ops.yml")
+	operators.requireXUID = uc.Server.AuthEnabled
 	registerCommands(srv, operators)
 	startConsoleReader(log, srv, operators, time.Now())
 
@@ -78,7 +79,7 @@ func main() {
 	spawn := srv.World().Spawn()
 	for p := range srv.Accept() {
 		log.Info("Player joined", "name", p.Name(), "version", p.GameVersion())
-		p.Handle(spawnProtect{o: operators, name: p.Name(), spawn: spawn, radius: conf.SpawnProtection}) // spawn protection for non-ops
+		p.Handle(spawnProtect{o: operators, name: p.Name(), xuid: p.XUID(), spawn: spawn, radius: conf.SpawnProtection}) // spawn protection for non-ops
 	}
 }
 

@@ -30,6 +30,7 @@ type spawnProtect struct {
 	player.NopHandler
 	o      *ops
 	name   string
+	xuid   string
 	spawn  cube.Pos
 	radius int
 }
@@ -47,7 +48,7 @@ func (h spawnProtect) HandleBlockPlace(ctx *player.Context, pos cube.Pos, _ worl
 }
 
 func (h spawnProtect) inside(pos cube.Pos) bool {
-	if h.radius <= 0 || h.o.is(h.name) {
+	if h.radius <= 0 || h.o.player(h.name, h.xuid) {
 		return false // off or an operator building
 	}
 	dx, dz := pos.X()-h.spawn.X(), pos.Z()-h.spawn.Z()

@@ -341,6 +341,9 @@ func (uc UserConfig) Config(log *slog.Logger) (Config, error) {
 		conf.LegacyOfflineBelow = 589
 	}
 	split := uc.Server.AuthEnabled && conf.LegacyOfflineBelow > 0
+	if split {
+		log.Warn("Clients below the offline protocol join without Xbox Live: their names are not verified and they cannot be operators. Set Server.LegacyOfflineBelow = -1 to require Xbox Live from everyone.", "protocol", conf.LegacyOfflineBelow)
+	}
 	if uc.Network.NetherNet.Enabled && uc.Network.NetherNet.SharedUDP {
 		shared := &sharedGameUDP{address: uc.Network.Address}
 		if split {
