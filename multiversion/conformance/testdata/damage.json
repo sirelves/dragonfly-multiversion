@@ -49,6 +49,16 @@
     },
     "revision": "8c30047d86617a56e1f1871e3a1d47ec4f670d99"
   },
+  "557": {
+    "packets": {
+      "death": "AQMA",
+      "health_dead": "AQIAAAAAAACgQQAAAAAAAKBBEG1pbmVjcmFmdDpoZWFsdGgAAAAAAP//f38AAAAAAAAAABRtaW5lY3JhZnQ6YWJzb3JwdGlvbgAA",
+      "health_full": "AQIAAAAAAACgQQAAoEEAAKBBEG1pbmVjcmFmdDpoZWFsdGgAAAAAAP//f38AAAAAAAAAABRtaW5lY3JhZnQ6YWJzb3JwdGlvbgAA",
+      "health_hurt": "AQIAAAAAAACgQQAAgEEAAKBBEG1pbmVjcmFmdDpoZWFsdGgAAAAAAP//f38AAAAAAAAAABRtaW5lY3JhZnQ6YWJzb3JwdGlvbgAA",
+      "hurt": "AQIA"
+    },
+    "revision": "a6a4e3bea71767b97e2c178fccea1793b974920f"
+  },
   "560": {
     "packets": {
       "death": "AQMA",
