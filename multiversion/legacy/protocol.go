@@ -66,6 +66,11 @@ func (p Protocol) Packets(listener bool) packet.Pool {
 			d.packets(uint32(p.id), pool, listener)
 		}
 	}
+	for id := range pool {
+		if _, ok := knownSets[p.id][id]; !ok && !handshake(id) {
+			delete(pool, id) // a packet this client cannot send or receive
+		}
+	}
 	return pool
 }
 
