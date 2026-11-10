@@ -19,6 +19,7 @@ start() {
 stop() { kill $pid 2>/dev/null; wait $pid 2>/dev/null; }
 if [ ! -f config.toml ]; then start; stop; fi
 sed -i '' -e 's/AuthEnabled = true/AuthEnabled = false/' -e "s/Address = \":19132\"/Address = \":$port\"/" config.toml
+for p in "$@"; do "$here/gen.sh" "$p" >/dev/null || { echo "client build failed for $p"; exit 1; }; done
 start
 rc=0
 for p in "$@"; do
