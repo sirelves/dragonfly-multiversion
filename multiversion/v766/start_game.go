@@ -168,7 +168,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	protocol.Slice(io, &pk.Items)
 	io.String(&pk.MultiPlayerCorrelationID)
 	io.Bool(&pk.ServerAuthoritativeInventory)
-	io.String(&pk.GameVersion)
+	if p := v786.ProtoOf(io); p == 0 || p >= 440 { // added in 440
+		io.String(&pk.GameVersion)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 527 { // added in 527
 		io.NBT(&pk.PropertyData, nbt.NetworkLittleEndian)
 	}

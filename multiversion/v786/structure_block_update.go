@@ -95,8 +95,10 @@ func StructureSettings786(io protocol.IO, x *protocol.StructureSettings) {
 	io.ActorUniqueID(&x.LastEditingPlayerUniqueID)
 	io.Uint8(&x.Rotation)
 	io.Uint8(&x.Mirror)
-	io.Uint8(&x.AnimationMode)
-	io.Float32(&x.AnimationDuration)
+	if p := ProtoOf(io); p == 0 || p >= 440 { // added in 440
+		io.Uint8(&x.AnimationMode)
+		io.Float32(&x.AnimationDuration)
+	}
 	io.Float32(&x.Integrity)
 	io.Uint32(&x.Seed)
 	io.Vec3(&x.Pivot)

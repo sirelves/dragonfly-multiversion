@@ -23,7 +23,9 @@ import "github.com/sandertv/gophertunnel/minecraft/protocol"
 
 func GameRuleLegacy(io protocol.IO, x *protocol.GameRule) {
 	io.String(&x.Name)
-	io.Bool(&x.CanBeModifiedByPlayer)
+	if p := ProtoOf(io); p == 0 || p >= 440 { // added in 440
+		io.Bool(&x.CanBeModifiedByPlayer)
+	}
 	var kind uint32
 	switch x.Value.(type) {
 	case bool:

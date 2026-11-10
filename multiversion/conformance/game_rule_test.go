@@ -34,6 +34,10 @@ func TestHistoricalIntegerGameRule(t *testing.T) {
 				want = []byte{3, 'r', 'u', 'l', 1, 2, 0x2c, 1, 0, 0}
 			}
 			input := protocol.GameRule{Name: "rul", CanBeModifiedByPlayer: true, Value: uint32(300)}
+			if p.ID() < 440 { // no editable flag before 1.17.0
+				want = []byte{3, 'r', 'u', 'l', 2, 0xac, 2}
+				input.CanBeModifiedByPlayer = false
+			}
 			encoded := new(bytes.Buffer)
 			p.NewWriter(encoded, 0).GameRule(&input)
 			if !bytes.Equal(encoded.Bytes(), want) {
