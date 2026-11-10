@@ -81,19 +81,12 @@ func states(dir, root, proto string) error {
 	if err != nil {
 		return err
 	}
+	list, err := decodeStates(data)
+	if err != nil {
+		return err
+	}
 	var buf bytes.Buffer
-	r := bytes.NewReader(data)
-	dec := nbt.NewDecoderWithEncoding(r, nbt.NetworkLittleEndian)
-	n := 0
-	for r.Len() > 0 {
-		var s struct {
-			Name    string         `nbt:"name"`
-			States  map[string]any `nbt:"states"`
-			Version int32          `nbt:"version"`
-		}
-		if err := dec.Decode(&s); err != nil {
-			return fmt.Errorf("state %d: %w", n, err)
-		}
+	for _, s := range list {
 		buf.WriteString(s.Name)
 		keys := make([]string, 0, len(s.States))
 		for k := range s.States {
@@ -116,8 +109,8 @@ func states(dir, root, proto string) error {
 			}
 		}
 		buf.WriteByte('\n')
-		n++
 	}
+	n := len(list)
 	f, err := os.Create(filepath.Join(root, "blockpalette", "data", "states_"+proto+".txt.gz"))
 	if err != nil {
 		return err
@@ -171,4 +164,40 @@ func items(dir, root, proto string) error {
 	}
 	fmt.Printf("%s: %d items\n", proto, len(list))
 	return os.WriteFile(filepath.Join(root, "itemdata", "runtime_item_states_"+proto+".json"), append(out, '\n'), 0o644)
+}
+
+type blockState struct {
+	Name    string         `nbt:"name"`
+	States  map[string]any `nbt:"states"`
+	Version int32          `nbt:"version"`
+}
+
+// decodeStates reads canonical_block_states.nbt. Since 1.16.100 it is a run of
+// root compounds; the 1.16.0/1.16.20 dumps are one list of {block, id} entries.
+func decodeStates(data []byte) ([]blockState, error) {
+	r := bytes.NewReader(data)
+	dec := nbt.NewDecoderWithEncoding(r, nbt.NetworkLittleEndian)
+	if len(data) > 0 && data[0] == 9 { // TAG_List
+		var legacy []struct {
+			Block blockState `nbt:"block"`
+			ID    int16      `nbt:"id"`
+		}
+		if err := dec.Decode(&legacy); err != nil {
+			return nil, err
+		}
+		out := make([]blockState, len(legacy))
+		for i, e := range legacy {
+			out[i] = e.Block
+		}
+		return out, nil
+	}
+	var out []blockState
+	for r.Len() > 0 {
+		var s blockState
+		if err := dec.Decode(&s); err != nil {
+			return nil, fmt.Errorf("state %d: %w", len(out), err)
+		}
+		out = append(out, s)
+	}
+	return out, nil
 }
