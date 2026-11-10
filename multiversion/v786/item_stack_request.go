@@ -47,7 +47,9 @@ func marshalItemStackRequest786(io protocol.IO, pk *protocol.ItemStackRequest) {
 	protocol.FuncSlice(io, &pk.Actions, func(x *protocol.StackRequestAction) {
 		stackReqAction786(io, x)
 	})
-	protocol.FuncSlice(io, &pk.FilterStrings, io.String)
+	if p := ProtoOf(io); p == 0 || p >= 422 { // added in 422
+		protocol.FuncSlice(io, &pk.FilterStrings, io.String)
+	}
 	if p := ProtoOf(io); p == 0 || p >= 554 { // added in 554
 		io.Int32(&pk.FilterCause)
 	} else {

@@ -256,7 +256,9 @@ func (x *TexturePackInfo) Marshal(r protocol.IO) {
 	r.String(&x.SubPackName)
 	r.String(&x.ContentIdentity)
 	r.Bool(&x.HasScripts)
-	r.Bool(&x.RTXEnabled)
+	if p := v786.ProtoOf(r); p == 0 || p >= 422 { // added in 422
+		r.Bool(&x.RTXEnabled)
+	}
 }
 
 type BehaviourPackInfo struct {
