@@ -20,6 +20,7 @@ TM-Dragonfly Project
 package conformance
 
 import (
+	mvlegacy "github.com/df-mc/dragonfly/multiversion/legacy"
 	"reflect"
 	"testing"
 
@@ -56,10 +57,10 @@ import (
 )
 
 func protocols() []minecraft.Protocol {
-	return []minecraft.Protocol{
+	return append(mvlegacy.Protocols(),
 		v630.Protocol{Version: 589}, v630.Protocol{Version: 594}, v630.Protocol{Version: 598}, v630.Protocol{Version: 618}, v630.Protocol{Version: 622}, v630.Protocol{}, v649.Protocol{}, v662.Protocol{}, v671.Protocol{}, v685.Protocol{}, v686.Protocol{}, v712.Protocol{}, v729.Protocol{}, v748.Protocol{}, v766.Protocol{}, v776.Protocol{}, v786.Protocol{}, v800.Protocol{}, v818.Protocol{}, v819.Protocol{},
 		v827.Protocol{}, v844.Protocol{}, v859.Protocol{}, v898.Protocol{}, v924.Protocol{}, v944.Protocol{}, v975.Protocol{}, v1001.Protocol{}, v2168.Protocol{}, v2169.Protocol{}, v2193.Protocol{}, native.Protocol{},
-	}
+	)
 }
 
 func legacy(proto minecraft.Protocol) bool { return proto.ID() < 900 }

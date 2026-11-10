@@ -92,7 +92,11 @@ func TestPoolAndConverterAgree(t *testing.T) {
 				continue
 			}
 			if got, want := isLatest(out[0]), isLatest(decoded); got != want {
-				if knownDisagreements[proto.ID()][id] {
+				known := knownDisagreements[proto.ID()]
+				if proto.ID() < 589 {
+					known = knownDisagreements[589] // legacy protocols reuse the 1.20.0 wire
+				}
+				if known[id] {
 					continue
 				}
 				t.Errorf("protocol %v, packet id %v: pool decodes it as %T but ConvertFromLatest encodes it "+

@@ -76,6 +76,9 @@ func TestHistoricalSoundActivity(t *testing.T) {
 		t.Run(fmt.Sprint(p.ID()), func(t *testing.T) {
 			for name, kind := range map[string]string{"attack": packet.SoundEventAttackStrong, "attack_no_damage": packet.SoundEventAttackNoDamage, "breathe": packet.SoundEventBreathe, "step": packet.SoundEventStep, "hit": packet.SoundEventHit, "record_relic": packet.SoundEventRecordRelic} {
 				t.Run(name, func(t *testing.T) {
+					if name == "record_relic" && p.ID() < 589 {
+						t.Skip("record.relic arrived in 1.20.0")
+					}
 					source := &packet.LevelSoundEvent{SoundType: kind, Position: mgl32.Vec3{-16.5, 65.25, 3}, ExtraData: -1, EntityType: "minecraft:player", BabyMob: true, DisableRelativeVolume: true, EntityUniqueID: -12345}
 					out := p.ConvertFromLatest(source, nil)
 					if len(out) != 1 {
