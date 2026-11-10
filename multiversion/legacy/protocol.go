@@ -38,7 +38,7 @@ func Protocols() []minecraft.Protocol {
 }
 
 // order lists the supported protocols, newest first.
-var order = []int32{582, 575, 568, 567, 560, 557, 554, 545, 544, 534, 527}
+var order = []int32{582, 575, 568, 567, 560, 557, 554, 545, 544, 534, 527, 503}
 
 var versions = map[int32]string{
 	582: "1.19.80",
@@ -52,6 +52,7 @@ var versions = map[int32]string{
 	544: "1.19.20",
 	534: "1.19.10",
 	527: "1.19.0",
+	503: "1.18.30",
 }
 
 func (p Protocol) ID() int32   { return p.id }
@@ -87,14 +88,23 @@ func (p Protocol) NewWriter(w minecraft.ByteWriter, shieldID int32) protocol.IO 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
 	pks := []packet.Packet{pk}
 	ds := p.deltas()
+	st := stateOf(conn)
 	for i := len(ds) - 1; i >= 0; i-- {
 		if ds[i].toLatest != nil {
 			pks = apply(pks, uint32(p.id), ds[i].toLatest)
+		}
+		if ds[i].client != nil {
+			pks = apply(pks, uint32(p.id), func(proto uint32, pk packet.Packet) []packet.Packet { return ds[i].client(proto, pk, st) })
 		}
 	}
 	out := make([]packet.Packet, 0, len(pks))
 	for _, pk := range pks {
 		out = append(out, p.base().ConvertToLatest(pk, conn)...)
+	}
+	for _, d := range ds {
+		if d.latest != nil {
+			out = apply(out, uint32(p.id), func(proto uint32, pk packet.Packet) []packet.Packet { return d.latest(proto, pk, st) })
+		}
 	}
 	return out
 }
@@ -159,10 +169,14 @@ type delta struct {
 	packets    func(proto uint32, pool packet.Pool, listener bool)
 	fromLatest func(proto uint32, pk packet.Packet) []packet.Packet
 	toLatest   func(proto uint32, pk packet.Packet) []packet.Packet
+	// client is toLatest for deltas that keep per-connection state; latest
+	// then sees the packets the base protocol made of them, in latest form.
+	client func(proto uint32, pk packet.Packet, st *connState) []packet.Packet
+	latest func(proto uint32, pk packet.Packet, st *connState) []packet.Packet
 }
 
 // deltas is ordered newest first.
-var deltas = []delta{delta582, delta575, delta567, delta560, delta557, delta554, delta545, delta544, delta534, delta527}
+var deltas = []delta{delta582, delta575, delta567, delta560, delta557, delta554, delta545, delta544, delta534, delta527, delta503}
 
 // deltas returns the deltas between 1.20.0 and p, newest first.
 func (p Protocol) deltas() []delta {
