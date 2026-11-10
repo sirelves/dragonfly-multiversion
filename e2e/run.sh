@@ -22,7 +22,12 @@ start
 rc=0
 for p in "$@"; do
   echo "=== client $p"
+  before=$(wc -l <server.log)
   "$here/bin/client-$p" -addr "127.0.0.1:$port" -name "e2e$p" -for "${E2E_FOR:-6s}" </dev/null || rc=1
+  sleep 0.5
+  if tail -n +"$((before + 1))" server.log | sed 's/\x1b\[[0-9;]*m//g' | grep -iE 'error|warn|panic|unhandled|unknown packet' ; then
+    echo "SERVER-ERRORS for $p"; rc=1
+  fi
 done
 stop
 exit $rc

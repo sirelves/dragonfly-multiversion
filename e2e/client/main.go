@@ -51,6 +51,22 @@ func main() {
 	gd := conn.GameData()
 	fmt.Printf("SPAWNED proto=%d pos=%v dim=%d\n", protocol.CurrentProtocol, gd.PlayerPosition, gd.Dimension)
 
+	// Walk east for two seconds and say hello, so serverbound packets of this
+	// version are decoded by the server too.
+	go func() {
+		pos := gd.PlayerPosition
+		t := time.NewTicker(50 * time.Millisecond)
+		defer t.Stop()
+		for i := 0; i < 40; i++ {
+			<-t.C
+			pos[0] += 0.1
+			if err := conn.WritePacket(&packet.PlayerAuthInput{Position: pos, Yaw: -90, HeadYaw: -90, InputMode: packet.InputModeMouse}); err != nil {
+				return
+			}
+		}
+		_ = conn.WritePacket(&packet.Text{TextType: packet.TextTypeChat, SourceName: *name, Message: "hello from " + *name})
+	}()
+
 	counts := map[string]int{}
 	deadline := time.Now().Add(*dur)
 	_ = conn.SetReadDeadline(deadline)
@@ -63,6 +79,9 @@ func main() {
 			break
 		}
 		counts[fmt.Sprintf("%T", pk)]++
+		if t, ok := pk.(*packet.Text); ok && strings.Contains(t.Message, "hello from") {
+			fmt.Printf("CHAT %q\n", t.Message)
+		}
 		if dc, ok := pk.(*packet.Disconnect); ok {
 			sink.Write([]byte("disconnected: " + dc.Message + "\n"))
 			break
