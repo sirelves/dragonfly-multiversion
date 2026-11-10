@@ -42,5 +42,7 @@ func (pk *CommandRequest) Marshal(io protocol.IO) {
 
 	CommandOriginData786(io, &pk.CommandOrigin)
 	io.Bool(&pk.Internal)
-	io.Varint32(&pk.Version)
+	if p := ProtoOf(io); p == 0 || p >= 567 { // added in 567
+		io.Varint32(&pk.Version)
+	}
 }

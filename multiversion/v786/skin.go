@@ -77,7 +77,9 @@ func (x *Skin786) Marshal(io protocol.IO) {
 	io.Bool(&x.PersonaSkin)
 	io.Bool(&x.PersonaCapeOnClassicSkin)
 	io.Bool(&x.PrimaryUser)
-	io.Bool(&x.OverrideAppearance)
+	if p := ProtoOf(io); p == 0 || p >= 567 { // added in 567
+		io.Bool(&x.OverrideAppearance)
+	}
 }
 
 type SkinAnimation786 struct {

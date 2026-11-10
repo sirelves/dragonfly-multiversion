@@ -127,7 +127,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Bool(&pk.OnlySpawnV1Villagers)
 	io.Bool(&pk.PersonaDisabled)
 	io.Bool(&pk.CustomSkinsDisabled)
-	io.Bool(&pk.EmoteChatMuted)
+	if p := v786.ProtoOf(io); p == 0 || p >= 567 { // added in 567
+		io.Bool(&pk.EmoteChatMuted)
+	}
 	io.String(&pk.BaseGameVersion)
 	io.Int32(&pk.LimitedWorldWidth)
 	io.Int32(&pk.LimitedWorldDepth)
