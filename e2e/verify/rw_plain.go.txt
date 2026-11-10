@@ -1,0 +1,10 @@
+package main
+
+import (
+	"bytes"
+
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
+)
+
+func rwReader(b *bytes.Buffer) *protocol.Reader { return protocol.NewReader(b) }
+func rwWriter(b *bytes.Buffer) *protocol.Writer { return protocol.NewWriter(b) }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
@@ -20,9 +19,9 @@ func roundTrip(id uint32, raw []byte) (int, []byte, error) {
 		return 0, nil, fmt.Errorf("unknown packet id")
 	}
 	buf := bytes.NewBuffer(raw)
-	pk.Unmarshal(protocol.NewReader(buf, 0))
+	pk.Unmarshal(rwReader(buf))
 	out := new(bytes.Buffer)
-	pk.Marshal(protocol.NewWriter(out, 0))
+	pk.Marshal(rwWriter(out))
 	return buf.Len(), out.Bytes(), nil
 }
 
@@ -47,6 +46,14 @@ func encodeFilled(id uint32) (name string, raw []byte, err error) {
 		fill(reflect.ValueOf(pk).Elem(), 0)
 	}
 	buf := new(bytes.Buffer)
-	pk.Marshal(protocol.NewWriter(buf, 0))
+	pk.Marshal(rwWriter(buf))
 	return name, buf.Bytes(), nil
+}
+
+func allIDs() []uint32 {
+	var ids []uint32
+	for id := range packet.NewPool() {
+		ids = append(ids, id)
+	}
+	return ids
 }

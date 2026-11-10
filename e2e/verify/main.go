@@ -25,7 +25,16 @@ import (
 func main() {
 	send := flag.String("send", "", "file written by TestBlindVerifySend")
 	recv := flag.String("recv", "", "file to write for TestBlindVerifyRecv")
+	ids := flag.Bool("ids", false, "print every packet ID this version knows")
 	flag.Parse()
+	if *ids {
+		all := allIDs()
+		sort.Slice(all, func(i, j int) bool { return all[i] < all[j] })
+		for _, id := range all {
+			fmt.Println(id)
+		}
+		return
+	}
 	if *recv != "" {
 		writeRecv(*recv)
 	}

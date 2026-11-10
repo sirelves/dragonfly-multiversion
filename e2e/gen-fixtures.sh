@@ -3,7 +3,8 @@
 # ItemStackRequest fixtures with that tag and merges them into item_stack.json.
 set -euo pipefail
 cd "$(dirname "$0")"
-proto=$1 tag=$2
+. ./lib.sh
+proto=$1 tag=${2:-$(e2e_tag "$1")}
 dir=build/fixtures-$proto
 mkdir -p "$dir"
 cp fixtures/main.go "$dir/main.go"

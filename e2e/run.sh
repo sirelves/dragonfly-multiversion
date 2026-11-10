@@ -3,6 +3,7 @@
 # joins with bin/client-<protocol> for each protocol and prints the result.
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
+. "$here/lib.sh"
 work=${E2E_WORK:-$here/build/srv}
 port=${E2E_PORT:-19232}
 mkdir -p "$work"
@@ -23,7 +24,7 @@ rc=0
 for p in "$@"; do
   echo "=== client $p"
   before=$(wc -l <server.log)
-  "$here/bin/client-$p" -addr "127.0.0.1:$port" -name "e2e$p" -for "${E2E_FOR:-6s}" </dev/null || rc=1
+  E2E_RAKNET_PROTOCOL=$(e2e_raknet "$p") "$here/bin/client-$p" -addr "127.0.0.1:$port" -name "e2e$p" -for "${E2E_FOR:-6s}" </dev/null || rc=1
   sleep 0.5
   if tail -n +"$((before + 1))" server.log | sed 's/\x1b\[[0-9;]*m//g' | grep -iE 'error|warn|panic|unhandled|unknown packet' ; then
     echo "SERVER-ERRORS for $p"; rc=1

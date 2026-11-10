@@ -2,7 +2,8 @@
 # gen.sh <protocol> <gophertunnel tag>: builds bin/client-<protocol> against that tag.
 set -euo pipefail
 cd "$(dirname "$0")"
-proto=$1 tag=$2
+. ./lib.sh
+proto=$1 tag=${2:-$(e2e_tag "$1")}
 legacy=0
 dir=build/$proto
 mkdir -p "$dir" bin

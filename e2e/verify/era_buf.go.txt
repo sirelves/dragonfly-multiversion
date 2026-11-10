@@ -55,3 +55,11 @@ func encodeFilled(id uint32) (name string, raw []byte, err error) {
 	pk.Marshal(buf)
 	return name, buf.Bytes(), nil
 }
+
+func allIDs() []uint32 {
+	var ids []uint32
+	for id := range packet.NewPool() {
+		ids = append(ids, id)
+	}
+	return ids
+}
