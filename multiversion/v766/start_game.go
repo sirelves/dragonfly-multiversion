@@ -71,7 +71,13 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Vec3(&pk.PlayerPosition)
 	io.Float32(&pk.Pitch)
 	io.Float32(&pk.Yaw)
-	io.Int64(&pk.WorldSeed)
+	if p := v786.ProtoOf(io); p != 0 && p < 503 { // a varint32 before 503
+		seed := int32(pk.WorldSeed)
+		io.Varint32(&seed)
+		pk.WorldSeed = int64(seed)
+	} else {
+		io.Int64(&pk.WorldSeed)
+	}
 	io.Int16(&pk.SpawnBiomeType)
 	io.String(&pk.UserDefinedBiomeName)
 	io.Varint32(&pk.Dimension)

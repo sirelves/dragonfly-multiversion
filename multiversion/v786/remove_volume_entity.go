@@ -35,5 +35,7 @@ func (*RemoveVolumeEntity) ID() uint32 {
 
 func (pk *RemoveVolumeEntity) Marshal(io protocol.IO) {
 	io.Uint64(&pk.EntityRuntimeID)
-	io.Varint32(&pk.Dimension)
+	if p := ProtoOf(io); p == 0 || p >= 503 { // added in 503
+		io.Varint32(&pk.Dimension)
+	}
 }

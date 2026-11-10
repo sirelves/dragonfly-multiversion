@@ -76,7 +76,9 @@ func (pk *AddPlayer) Marshal(io protocol.IO) {
 	io.Float32(&pk.Yaw)
 	io.Float32(&pk.HeadYaw)
 	io.ItemInstance(&pk.HeldItem)
-	io.Varint32(&pk.GameType)
+	if p := ProtoOf(io); p == 0 || p >= 503 { // added in 503
+		io.Varint32(&pk.GameType)
+	}
 	io.EntityMetadata(&pk.EntityMetadata)
 	if p := ProtoOf(io); p == 0 || p >= 557 { // added in 557
 		protocol.Single(io, &pk.EntityProperties)

@@ -49,8 +49,10 @@ func (pk *AddVolumeEntity) Marshal(io protocol.IO) {
 	io.NBT(&pk.EntityMetadata, nbt.NetworkLittleEndian)
 	io.String(&pk.EncodingIdentifier)
 	io.String(&pk.InstanceIdentifier)
-	UBlockPos786(io, &pk.Bounds[0])
-	UBlockPos786(io, &pk.Bounds[1])
-	io.Varint32(&pk.Dimension)
+	if p := ProtoOf(io); p == 0 || p >= 503 { // added in 503
+		UBlockPos786(io, &pk.Bounds[0])
+		UBlockPos786(io, &pk.Bounds[1])
+		io.Varint32(&pk.Dimension)
+	}
 	io.String(&pk.EngineVersion)
 }
