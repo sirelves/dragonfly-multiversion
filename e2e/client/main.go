@@ -43,11 +43,11 @@ func main() {
 	d.IdentityData.DisplayName = *name
 	conn, err := d.DialTimeout("raknet", *addr, 20*time.Second)
 	if err != nil {
-		fail("dial: %v", err)
+		fail("dial: %v\n%s", err, strings.TrimSpace(sink.buf.String()))
 	}
 	defer conn.Close()
 	if err := conn.DoSpawnTimeout(20 * time.Second); err != nil {
-		fail("spawn: %v", err)
+		fail("spawn: %v\n%s", err, strings.TrimSpace(sink.buf.String()))
 	}
 	gd := conn.GameData()
 	fmt.Printf("SPAWNED proto=%d pos=%v dim=%d\n", protocol.CurrentProtocol, gd.PlayerPosition, gd.Dimension)

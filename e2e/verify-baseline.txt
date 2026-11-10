@@ -56,3 +56,9 @@ fill server SpawnParticleEffect 503,527,534,544
 # The handshake packets pass the unknown-ID filter: the listener rewrites them.
 zero server RequestNetworkSettings <=545
 fill server RequestNetworkSettings <=545
+# gophertunnel <= v1.18.1 registers StructureTemplateDataResponse under the
+# request ID as well, so the reference decodes requests with the wrong type.
+zero server StructureTemplateDataRequest <=475
+fill server StructureTemplateDataRequest <=475
+zero client StructureTemplateDataResponse <=475
+fill client StructureTemplateDataResponse <=475

@@ -1,4 +1,6 @@
 # protocol  gophertunnel-tag  version   raknet
+# 475 pins v1.18.1: v1.18.2 dropped the Education Edition pack exemption the
+# real client honours, so its dialer rejects every server.
 407         v1.7.11           1.16.0    10
 408         v1.8.2            1.16.20   10
 419         v1.10.0           1.16.100  10
@@ -9,7 +11,7 @@
 448         v1.14.3           1.17.10   10
 465         v1.15.1           1.17.30   10
 471         v1.16.4           1.17.40   10
-475         v1.18.2           1.18.0    10
+475         v1.18.1           1.18.0    10
 486         v1.19.6           1.18.10   10
 503         v1.19.13          1.18.30   10
 527         v1.21.2           1.19.0    10
