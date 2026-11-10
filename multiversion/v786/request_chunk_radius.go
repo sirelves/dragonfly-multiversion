@@ -35,5 +35,7 @@ func (*RequestChunkRadius) ID() uint32 {
 
 func (pk *RequestChunkRadius) Marshal(io protocol.IO) {
 	io.Varint32(&pk.ChunkRadius)
-	io.Varint32(&pk.MaxChunkRadius)
+	if p := ProtoOf(io); p == 0 || p >= 582 { // added in 582
+		io.Varint32(&pk.MaxChunkRadius)
+	}
 }

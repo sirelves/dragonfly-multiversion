@@ -94,8 +94,10 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	} else {
 		io.Varint32(&pk.EditorWorldType)
 	}
-	io.Bool(&pk.CreatedInEditor)
-	io.Bool(&pk.ExportedFromEditor)
+	if p := v786.ProtoOf(io); p == 0 || p >= 582 { // added in 582
+		io.Bool(&pk.CreatedInEditor)
+		io.Bool(&pk.ExportedFromEditor)
+	}
 	io.Varint32(&pk.DayCycleLockTime)
 	io.Varint32(&pk.EducationEditionOffer)
 	io.Bool(&pk.EducationFeaturesEnabled)
@@ -155,7 +157,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Uint64(&pk.ServerBlockStateChecksum)
 	io.UUID(&pk.WorldTemplateID)
 	io.Bool(&pk.ClientSideGeneration)
-	io.Bool(&pk.UseBlockNetworkIDHashes)
+	if p := v786.ProtoOf(io); p == 0 || p >= 582 { // added in 582
+		io.Bool(&pk.UseBlockNetworkIDHashes)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 589 { // added in 589
 		io.Bool(&pk.ServerAuthoritativeSound)
 	}
