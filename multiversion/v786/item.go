@@ -255,7 +255,14 @@ func (w Writer786) ItemInstance(i *protocol.ItemInstance) {
 	}
 	writeItemInstance786(w.Writer, itemdata.ShieldID(w.Proto), &cp)
 }
-func (w Writer786) EntityMetadata(x *protocol.EntityMetadata) { writeEntityMetadata786(w.Writer, x) }
+func (w Writer786) EntityMetadata(x *protocol.EntityMetadata) {
+	if w.Proto != 0 && w.Proto < 589 {
+		m := legacyEntityMetadata(w.Proto, *x)
+		writeEntityMetadata786(w.Writer, &m)
+		return
+	}
+	writeEntityMetadata786(w.Writer, x)
+}
 
 func translateItemIDs(proto uint32, x protocol.ItemStack) protocol.ItemStack {
 	block := x.BlockRuntimeID != 0 || legacyBlockItem(proto, x, false)
