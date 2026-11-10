@@ -1,0 +1,11 @@
+package main
+
+import "github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+
+func newPacket(p packet.Pool, id uint32) (packet.Packet, bool) {
+	f, ok := p[id]
+	if !ok {
+		return nil, false
+	}
+	return f(), true
+}

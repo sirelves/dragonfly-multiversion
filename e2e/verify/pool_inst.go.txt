@@ -1,0 +1,15 @@
+package main
+
+import (
+	"reflect"
+
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+)
+
+func newPacket(p packet.Pool, id uint32) (packet.Packet, bool) {
+	pk, ok := p[id]
+	if !ok {
+		return nil, false
+	}
+	return reflect.New(reflect.TypeOf(pk).Elem()).Interface().(packet.Packet), true
+}

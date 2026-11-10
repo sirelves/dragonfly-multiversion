@@ -1,0 +1,16 @@
+package main
+
+import "github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+
+func allPool() map[uint32]func() packet.Packet {
+	all := map[uint32]func() packet.Packet{}
+	for id, f := range packet.NewServerPool() {
+		all[id] = f
+	}
+	for id, f := range packet.NewClientPool() {
+		all[id] = f
+	}
+	return all
+}
+
+func clientPool() map[uint32]func() packet.Packet { return packet.NewClientPool() }

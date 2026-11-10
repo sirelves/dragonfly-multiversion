@@ -1,0 +1,57 @@
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"reflect"
+	"sort"
+
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+)
+
+func fresh(id uint32) (packet.Packet, bool) {
+	pk, ok := packet.NewPool()[id]
+	if !ok {
+		return nil, false
+	}
+	return reflect.New(reflect.TypeOf(pk).Elem()).Interface().(packet.Packet), true
+}
+
+func roundTrip(id uint32, raw []byte) (int, []byte, error) {
+	pk, ok := fresh(id)
+	if !ok {
+		return 0, nil, fmt.Errorf("unknown packet id")
+	}
+	buf := bytes.NewBuffer(raw)
+	if err := pk.Unmarshal(buf); err != nil {
+		return buf.Len(), nil, fmt.Errorf("decode: %w", err)
+	}
+	out := new(bytes.Buffer)
+	pk.Marshal(out)
+	return buf.Len(), out.Bytes(), nil
+}
+
+func poolIDs() []uint32 {
+	var ids []uint32
+	for id := range packet.NewPool() {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids
+}
+
+func encodeFilled(id uint32) (name string, raw []byte, err error) {
+	pk, _ := fresh(id)
+	name = reflect.TypeOf(pk).Elem().Name()
+	defer func() {
+		if e := recover(); e != nil {
+			err = fmt.Errorf("%v", e)
+		}
+	}()
+	if filled {
+		fill(reflect.ValueOf(pk).Elem(), 0)
+	}
+	buf := new(bytes.Buffer)
+	pk.Marshal(buf)
+	return name, buf.Bytes(), nil
+}
