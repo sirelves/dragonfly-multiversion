@@ -125,7 +125,7 @@ func (l *legacyRakNetListener) accept() {
 			version := int32(binary.BigEndian.Uint32(buf.Bytes()))
 			var prepared net.Conn = &rakNetReplay{Conn: c, first: first}
 			if version < 649 {
-				prepared = newLegacyRakNetConn(c, first)
+				prepared = newLegacyRakNetConn(c, first, version)
 			}
 			select {
 			case l.ready <- prepared:
@@ -199,6 +199,9 @@ type legacyRakNetConn struct {
 	preSettings bool
 	settled     chan struct{}
 	settleOnce  sync.Once
+	// proto is the client protocol; before 1.16.220 packets are encrypted
+	// with AES-CFB8 instead of AES-CTR.
+	proto int32
 	reads       chan legacyBatchResult
 	done        chan struct{}
 	once        sync.Once
@@ -209,8 +212,8 @@ type legacyRakNetConn struct {
 	handshake   chan struct{}
 }
 
-func newLegacyRakNetConn(c net.Conn, first []byte) *legacyRakNetConn {
-	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{}), settled: make(chan struct{})}
+func newLegacyRakNetConn(c net.Conn, first []byte, proto int32) *legacyRakNetConn {
+	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{}), settled: make(chan struct{}), proto: proto}
 	go w.readBatches(first, nil)
 	return w
 }
@@ -220,7 +223,7 @@ func newLegacyRakNetConn(c net.Conn, first []byte) *legacyRakNetConn {
 // once it has answered with NetworkSettings (which is not forwarded), the
 // client's real first batch with the Login.
 func newPreSettingsRakNetConn(c net.Conn, login []byte, proto int32) *legacyRakNetConn {
-	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{}), settled: make(chan struct{}), preSettings: true}
+	w := &legacyRakNetConn{rakNetReplay: rakNetReplay{Conn: c}, reads: make(chan legacyBatchResult, 8), done: make(chan struct{}), handshake: make(chan struct{}), settled: make(chan struct{}), preSettings: true, proto: proto}
 	synthetic := packLegacyBatch([][]byte{encodeLegacyPacket(&packet.RequestNetworkSettings{ClientProtocol: proto})})
 	go w.readBatches(synthetic, login)
 	return w
@@ -469,7 +472,7 @@ func (c *legacyRakNetConn) startEncryption() error {
 	if _, err := rand.Read(salt); err != nil {
 		return err
 	}
-	crypto, err := newLegacyPacketCrypto(key, c.clientKey.Load(), salt)
+	crypto, err := newLegacyPacketCrypto(key, c.clientKey.Load(), salt, c.proto)
 	if err != nil {
 		return err
 	}
@@ -502,7 +505,7 @@ type legacyPacketCrypto struct {
 	read    uint64
 }
 
-func newLegacyPacketCrypto(key *ecdsa.PrivateKey, peer *ecdsa.PublicKey, salt []byte) (*legacyPacketCrypto, error) {
+func newLegacyPacketCrypto(key *ecdsa.PrivateKey, peer *ecdsa.PublicKey, salt []byte, proto int32) (*legacyPacketCrypto, error) {
 	private, err := key.ECDH()
 	if err != nil {
 		return nil, err
@@ -519,6 +522,11 @@ func newLegacyPacketCrypto(key *ecdsa.PrivateKey, peer *ecdsa.PublicKey, salt []
 	block, err := aes.NewCipher(w.key[:])
 	if err != nil {
 		return nil, err
+	}
+	if proto != 0 && proto < 431 {
+		// Before 1.16.220: AES-256-CFB8 with the first block of the key as IV.
+		w.send, w.receive = newCFB8(block, w.key[:aes.BlockSize], false), newCFB8(block, w.key[:aes.BlockSize], true)
+		return w, nil
 	}
 	iv := make([]byte, aes.BlockSize)
 	copy(iv, w.key[:12])
@@ -613,4 +621,31 @@ func decodeLegacyPacket(buf *bytes.Buffer, pk packet.Packet) (err error) {
 		return fmt.Errorf("trailing legacy packet bytes")
 	}
 	return nil
+}
+
+// cfb8 is AES in CFB mode with 8-bit segments, the packet cipher of clients
+// before 1.16.220. Adapted from gophertunnel v1.11 (MIT).
+type cfb8 struct {
+	block   cipher.Block
+	sr      []byte
+	srEnc   []byte
+	decrypt bool
+}
+
+func newCFB8(block cipher.Block, iv []byte, decrypt bool) cipher.Stream {
+	return &cfb8{block: block, sr: bytes.Clone(iv), srEnc: make([]byte, block.BlockSize()), decrypt: decrypt}
+}
+
+func (x *cfb8) XORKeyStream(dst, src []byte) {
+	for i := range src {
+		x.block.Encrypt(x.srEnc, x.sr)
+		in := src[i]
+		dst[i] = in ^ x.srEnc[0]
+		next := dst[i]
+		if x.decrypt {
+			next = in
+		}
+		copy(x.sr, x.sr[1:])
+		x.sr[len(x.sr)-1] = next
+	}
 }

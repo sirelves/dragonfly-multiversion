@@ -40,7 +40,10 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 )
 
-type legacyClientNetwork struct{ minecraft.Network }
+type legacyClientNetwork struct {
+	minecraft.Network
+	proto int32
+}
 
 func (n legacyClientNetwork) DialContext(ctx context.Context, address string) (net.Conn, error) {
 	c, err := n.Network.DialContext(ctx, address)
@@ -52,7 +55,7 @@ func (n legacyClientNetwork) DialContext(ctx context.Context, address string) (n
 		_ = c.Close()
 		return nil, err
 	}
-	return &legacyWireClient{rakNetReplay: rakNetReplay{Conn: c}, key: key}, nil
+	return &legacyWireClient{rakNetReplay: rakNetReplay{Conn: c}, key: key, proto: n.proto}, nil
 }
 
 func dialTestClient(d minecraft.Dialer, address string, timeout time.Duration) (*minecraft.Conn, error) {
@@ -60,7 +63,7 @@ func dialTestClient(d minecraft.Dialer, address string, timeout time.Duration) (
 	defer cancel()
 	var network minecraft.Network = rakNetNetwork(nil)
 	if d.Protocol != nil && d.Protocol.ID() < 649 {
-		network = legacyClientNetwork{Network: network}
+		network = legacyClientNetwork{Network: network, proto: d.Protocol.ID()}
 	}
 	return d.DialContextNetwork(ctx, network, address)
 }
@@ -68,6 +71,7 @@ func dialTestClient(d minecraft.Dialer, address string, timeout time.Duration) (
 type legacyWireClient struct {
 	rakNetReplay
 	key        *ecdsa.PrivateKey
+	proto      int32
 	crypto     atomic.Pointer[legacyPacketCrypto]
 	compressed atomic.Bool
 	writeMu    sync.Mutex
@@ -181,7 +185,7 @@ func (c *legacyWireClient) ReadPacket() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			crypto, err := newLegacyPacketCrypto(c.key, public, salt)
+			crypto, err := newLegacyPacketCrypto(c.key, public, salt, c.proto)
 			if err != nil {
 				return nil, err
 			}
@@ -205,11 +209,17 @@ func (c *legacyWireClient) ReadPacket() ([]byte, error) {
 func TestLegacyEncryptedChecksum(t *testing.T) {
 	a, _ := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	b, _ := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	sender, err := newLegacyPacketCrypto(a, &b.PublicKey, []byte("legacy checksum"))
+	for _, proto := range []int32{0, 428} { // CTR, and CFB8 before 1.16.220
+		testLegacyEncryptedChecksum(t, a, b, proto)
+	}
+}
+
+func testLegacyEncryptedChecksum(t *testing.T, a, b *ecdsa.PrivateKey, proto int32) {
+	sender, err := newLegacyPacketCrypto(a, &b.PublicKey, []byte("legacy checksum"), proto)
 	if err != nil {
 		t.Fatal(err)
 	}
-	receiver, err := newLegacyPacketCrypto(b, &a.PublicKey, []byte("legacy checksum"))
+	receiver, err := newLegacyPacketCrypto(b, &a.PublicKey, []byte("legacy checksum"), proto)
 	if err != nil {
 		t.Fatal(err)
 	}
