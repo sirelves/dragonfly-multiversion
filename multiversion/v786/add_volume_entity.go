@@ -56,5 +56,7 @@ func (pk *AddVolumeEntity) Marshal(io protocol.IO) {
 		UBlockPos786(io, &pk.Bounds[1])
 		io.Varint32(&pk.Dimension)
 	}
-	io.String(&pk.EngineVersion)
+	if p := ProtoOf(io); p == 0 || p >= 465 { // added in 465
+		io.String(&pk.EngineVersion)
+	}
 }

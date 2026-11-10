@@ -65,18 +65,28 @@ func (x *Skin786) Marshal(io protocol.IO) {
 	io.Uint32(&x.CapeImageHeight)
 	io.ByteSlice(&x.CapeData)
 	io.ByteSlice(&x.SkinGeometry)
-	io.ByteSlice(&x.GeometryDataEngineVersion)
+	if p := ProtoOf(io); p == 0 || p >= 465 { // added in 465
+		io.ByteSlice(&x.GeometryDataEngineVersion)
+	}
 	io.ByteSlice(&x.AnimationData)
+	old := ProtoOf(io) != 0 && ProtoOf(io) < 465 // the flags came first before 465
+	if old {
+		io.Bool(&x.PremiumSkin)
+		io.Bool(&x.PersonaSkin)
+		io.Bool(&x.PersonaCapeOnClassicSkin)
+	}
 	io.String(&x.CapeID)
 	io.String(&x.FullID)
 	io.String(&x.ArmSize)
 	io.String(&x.SkinColour)
 	protocol.SliceUint32Length(io, &x.PersonaPieces)
 	protocol.SliceUint32Length(io, &x.PieceTintColours)
-	io.Bool(&x.PremiumSkin)
-	io.Bool(&x.PersonaSkin)
-	io.Bool(&x.PersonaCapeOnClassicSkin)
-	io.Bool(&x.PrimaryUser)
+	if !old {
+		io.Bool(&x.PremiumSkin)
+		io.Bool(&x.PersonaSkin)
+		io.Bool(&x.PersonaCapeOnClassicSkin)
+		io.Bool(&x.PrimaryUser) // added in 465
+	}
 	if p := ProtoOf(io); p == 0 || p >= 567 { // added in 567
 		io.Bool(&x.OverrideAppearance)
 	}

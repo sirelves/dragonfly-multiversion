@@ -38,5 +38,7 @@ func (*HurtArmour) ID() uint32 {
 func (pk *HurtArmour) Marshal(io protocol.IO) {
 	io.Varint32(&pk.Cause)
 	io.Varint32(&pk.Damage)
-	io.Varint64(&pk.ArmourSlots)
+	if p := ProtoOf(io); p == 0 || p >= 465 { // added in 465
+		io.Varint64(&pk.ArmourSlots)
+	}
 }

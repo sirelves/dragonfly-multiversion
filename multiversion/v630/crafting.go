@@ -21,6 +21,7 @@ package v630
 
 import (
 	"github.com/df-mc/dragonfly/multiversion/itemdata"
+	"github.com/df-mc/dragonfly/multiversion/v786"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -87,7 +88,9 @@ func (pk *CraftingData) Marshal(io protocol.IO) {
 	protocol.Slice(io, &pk.Recipes)
 	protocol.Slice(io, &pk.PotionRecipes)
 	protocol.Slice(io, &pk.PotionContainerChangeRecipes)
-	protocol.FuncSlice(io, &pk.MaterialReducers, io.MaterialReducer)
+	if p := v786.ProtoOf(io); p == 0 || p >= 465 { // added in 465
+		protocol.FuncSlice(io, &pk.MaterialReducers, io.MaterialReducer)
+	}
 	io.Bool(&pk.ClearRecipes)
 }
 

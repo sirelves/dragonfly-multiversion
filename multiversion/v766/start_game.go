@@ -144,7 +144,9 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Int32(&pk.LimitedWorldWidth)
 	io.Int32(&pk.LimitedWorldDepth)
 	io.Bool(&pk.NewNether)
-	protocol.Single(io, &pk.EducationSharedResourceURI)
+	if p := v786.ProtoOf(io); p == 0 || p >= 465 { // added in 465
+		protocol.Single(io, &pk.EducationSharedResourceURI)
+	}
 	protocol.OptionalFunc(io, &pk.ForceExperimentalGameplay, io.Bool)
 	if p := v786.ProtoOf(io); p == 0 || p >= 544 { // added in 544
 		io.Uint8(&pk.ChatRestrictionLevel)
