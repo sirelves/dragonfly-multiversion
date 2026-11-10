@@ -37,7 +37,15 @@ func (pk *ItemStackResponse) Marshal(io protocol.IO) {
 }
 
 func itemStackResponse786(r protocol.IO, x *protocol.ItemStackResponse) {
-	r.Uint8(&x.Status)
+	if p := ProtoOf(r); p != 0 && p < 419 { // a success bool before 419
+		ok := x.Status == protocol.ItemStackResponseStatusOK
+		r.Bool(&ok)
+		if x.Status = protocol.ItemStackResponseStatusError; ok {
+			x.Status = protocol.ItemStackResponseStatusOK
+		}
+	} else {
+		r.Uint8(&x.Status)
+	}
 	r.Varint32(&x.RequestID)
 	if x.Status == protocol.ItemStackResponseStatusOK {
 		protocol.FuncSlice(r, &x.ContainerInfo, func(c *protocol.StackResponseContainerInfo) {

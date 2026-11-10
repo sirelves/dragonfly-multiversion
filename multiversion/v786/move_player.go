@@ -80,5 +80,7 @@ func (pk *MovePlayer) Marshal(io protocol.IO) {
 		io.Int32(&pk.TeleportCause)
 		io.Int32(&pk.TeleportSourceEntityType)
 	}
-	io.Varuint64(&pk.Tick)
+	if p := ProtoOf(io); p == 0 || p >= 419 { // added in 419
+		io.Varuint64(&pk.Tick)
+	}
 }

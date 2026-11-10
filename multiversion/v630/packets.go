@@ -80,8 +80,10 @@ func (pk *PlayerAuthInput) Marshal(io protocol.IO) {
 	if pk.PlayMode == packet.PlayModeReality {
 		io.Vec3(&pk.GazeDirection)
 	}
-	io.Varuint64(&pk.Tick)
-	io.Vec3(&pk.Delta)
+	if p := v786.ProtoOf(io); p == 0 || p >= 419 { // added in 419
+		io.Varuint64(&pk.Tick)
+		io.Vec3(&pk.Delta)
+	}
 	if p := v786.ProtoOf(io); p == 0 || p >= 428 { // the interaction sections arrived in 428
 		if pk.InputData&(1<<34) != 0 {
 			io.PlayerInventoryAction(&pk.ItemInteractionData)

@@ -81,7 +81,9 @@ func (pk *ContainerClose) Marshal(io protocol.IO) {
 	if p := ProtoOf(io); p == 0 || p >= 685 { // added in 685
 		io.Uint8(&pk.ContainerType)
 	}
-	io.Bool(&pk.ServerSide)
+	if p := ProtoOf(io); p == 0 || p >= 419 { // added in 419
+		io.Bool(&pk.ServerSide)
+	}
 }
 func toLatestContainerClose(pk *ContainerClose) *packet.ContainerClose {
 	return &packet.ContainerClose{WindowID: pk.WindowID, ContainerType: pk.ContainerType, ServerSide: pk.ServerSide}

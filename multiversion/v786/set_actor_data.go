@@ -43,5 +43,7 @@ func (pk *SetActorData) Marshal(io protocol.IO) {
 	if p := ProtoOf(io); p == 0 || p >= 557 { // added in 557
 		protocol.Single(io, &pk.EntityProperties)
 	}
-	io.Varuint64(&pk.Tick)
+	if p := ProtoOf(io); p == 0 || p >= 419 { // added in 419
+		io.Varuint64(&pk.Tick)
+	}
 }

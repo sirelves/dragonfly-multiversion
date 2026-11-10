@@ -55,7 +55,9 @@ func (*UpdateAttributes) ID() uint32 { return v786.IDUpdateAttributes }
 func (pk *UpdateAttributes) Marshal(io protocol.IO) {
 	io.Varuint64(&pk.EntityRuntimeID)
 	protocol.Slice(io, &pk.Attributes)
-	io.Varuint64(&pk.Tick)
+	if p := v786.ProtoOf(io); p == 0 || p >= 419 { // added in 419
+		io.Varuint64(&pk.Tick)
+	}
 }
 
 func fromLatestUpdateAttributes(pk *packet.UpdateAttributes) *UpdateAttributes {

@@ -51,13 +51,19 @@ type ItemEntry struct {
 func (x *ItemEntry) Marshal(r protocol.IO) {
 	r.String(&x.Name)
 	r.Int16(&x.RuntimeID)
-	r.Bool(&x.ComponentBased)
+	if p := v786.ProtoOf(r); p == 0 || p >= 419 { // added in 419
+		r.Bool(&x.ComponentBased)
+	}
 }
 
 type StartGame struct {
 	v786.StartGame
 
 	Items []ItemEntry
+
+	// LegacyBlockPalette is the network NBT list of every block state, sent
+	// instead of Blocks to protocols before 419.
+	LegacyBlockPalette []byte
 }
 
 func (*StartGame) ID() uint32 {
@@ -120,8 +126,10 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.Bool(&pk.CommandsEnabled)
 	io.Bool(&pk.TexturePackRequired)
 	protocol.FuncSlice(io, &pk.GameRules, io.GameRule)
-	protocol.SliceUint32Length(io, &pk.Experiments)
-	io.Bool(&pk.ExperimentsPreviouslyToggled)
+	if p := v786.ProtoOf(io); p == 0 || p >= 419 { // added in 419
+		protocol.SliceUint32Length(io, &pk.Experiments)
+		io.Bool(&pk.ExperimentsPreviouslyToggled)
+	}
 	io.Bool(&pk.BonusChestEnabled)
 	io.Bool(&pk.StartWithMapEnabled)
 	io.Varint32(&pk.PlayerPermissions)
@@ -161,7 +169,13 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	io.String(&pk.WorldName)
 	io.String(&pk.TemplateContentIdentity)
 	io.Bool(&pk.Trial)
-	if p := v786.ProtoOf(io); p != 0 && p < 428 { // only the movement mode before 428
+	if p := v786.ProtoOf(io); p != 0 && p < 419 { // a server authoritative movement bool before 419
+		server := pk.PlayerMovementSettings.MovementType != 0
+		io.Bool(&server)
+		if server && pk.PlayerMovementSettings.MovementType == 0 {
+			pk.PlayerMovementSettings.MovementType = 1
+		}
+	} else if p != 0 && p < 428 { // only the movement mode before 428
 		mode := uint32(pk.PlayerMovementSettings.MovementType)
 		io.Varuint32(&mode)
 		pk.PlayerMovementSettings.MovementType = int32(mode)
@@ -170,7 +184,18 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 	}
 	io.Int64(&pk.Time)
 	io.Varint32(&pk.EnchantmentSeed)
-	protocol.Slice(io, &pk.Blocks)
+	if p := v786.ProtoOf(io); p != 0 && p < 419 {
+		// The whole block palette as an NBT list, which also fixes the runtime IDs.
+		if _, reading := io.(v786.Reader786); reading {
+			var list []any
+			io.NBTList(&list, nbt.NetworkLittleEndian)
+			pk.LegacyBlockPalette, _ = nbt.MarshalEncoding(list, nbt.NetworkLittleEndian)
+		} else {
+			io.Bytes(&pk.LegacyBlockPalette)
+		}
+	} else {
+		protocol.Slice(io, &pk.Blocks)
+	}
 	protocol.Slice(io, &pk.Items)
 	io.String(&pk.MultiPlayerCorrelationID)
 	io.Bool(&pk.ServerAuthoritativeInventory)

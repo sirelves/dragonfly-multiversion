@@ -47,6 +47,12 @@ func (pk *ResourcePackStack) Marshal(io protocol.IO) {
 	io.Bool(&pk.TexturePackRequired)
 	protocol.Slice(io, &pk.BehaviourPacks)
 	protocol.Slice(io, &pk.TexturePacks)
+	if p := ProtoOf(io); p != 0 && p < 419 { // an experimental flag before 419
+		experimental := len(pk.Experiments) != 0
+		io.Bool(&experimental)
+		io.String(&pk.BaseGameVersion)
+		return
+	}
 	io.String(&pk.BaseGameVersion)
 	protocol.SliceUint32Length(io, &pk.Experiments)
 	io.Bool(&pk.ExperimentsPreviouslyToggled)
