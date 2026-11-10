@@ -1,0 +1,24 @@
+package main
+
+import (
+	"math"
+
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+)
+
+func damagePackets() map[string]packet.Packet {
+	attrs := func(health float32) []protocol.Attribute {
+		return []protocol.Attribute{
+			{AttributeValue: protocol.AttributeValue{Name: "minecraft:health", Value: health, Max: 20}, Default: 20},
+			{AttributeValue: protocol.AttributeValue{Name: "minecraft:absorption", Max: math.MaxFloat32}},
+		}
+	}
+	return map[string]packet.Packet{
+		"hurt":        &packet.ActorEvent{EntityRuntimeID: 1, EventType: packet.ActorEventHurt},
+		"death":       &packet.ActorEvent{EntityRuntimeID: 1, EventType: packet.ActorEventDeath},
+		"health_full": &packet.UpdateAttributes{EntityRuntimeID: 1, Attributes: attrs(20)},
+		"health_hurt": &packet.UpdateAttributes{EntityRuntimeID: 1, Attributes: attrs(16)},
+		"health_dead": &packet.UpdateAttributes{EntityRuntimeID: 1, Attributes: attrs(0)},
+	}
+}

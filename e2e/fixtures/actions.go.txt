@@ -1,0 +1,28 @@
+package main
+
+import "github.com/sandertv/gophertunnel/minecraft/protocol"
+
+func actionSet(take *protocol.TakeStackRequestAction, results *protocol.CraftResultsDeprecatedStackRequestAction) map[string][]protocol.StackRequestAction {
+	creative := &protocol.CraftCreativeStackRequestAction{CreativeItemNetworkID: 391}
+	return map[string][]protocol.StackRequestAction{
+		"auto":           {&protocol.AutoCraftRecipeStackRequestAction{RecipeNetworkID: 123, TimesCrafted: 1}},
+		"beacon":         {&protocol.BeaconPaymentStackRequestAction{}},
+		"consume":        {&protocol.ConsumeStackRequestAction{}},
+		"create":         {&protocol.CreateStackRequestAction{}},
+		"creative":       {creative},
+		"creative_take":  {creative, results, take},
+		"destroy":        {&protocol.DestroyStackRequestAction{}},
+		"drop":           {&protocol.DropStackRequestAction{}},
+		"grindstone":     {&protocol.CraftGrindstoneRecipeStackRequestAction{RecipeNetworkID: 123, Cost: 3}},
+		"lab":            {&protocol.LabTableCombineStackRequestAction{}},
+		"loom":           {&protocol.CraftLoomRecipeStackRequestAction{Pattern: "cre"}},
+		"mine":           {&protocol.MineBlockStackRequestAction{}},
+		"nonimplemented": {&protocol.CraftNonImplementedStackRequestAction{}},
+		"optional":       {&protocol.CraftRecipeOptionalStackRequestAction{RecipeNetworkID: 123}},
+		"place":          {&protocol.PlaceStackRequestAction{}},
+		"recipe":         {&protocol.CraftRecipeStackRequestAction{RecipeNetworkID: 123}},
+		"results":        {results},
+		"swap":           {&protocol.SwapStackRequestAction{}},
+		"take":           {take},
+	}
+}
