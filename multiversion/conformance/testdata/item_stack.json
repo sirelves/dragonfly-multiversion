@@ -156,6 +156,27 @@
     "revision": "8c30047d86617a56e1f1871e3a1d47ec4f670d99",
     "stone_sword": 343
   },
+  "407": {
+    "fixtures": {
+      "auto": "AQUBCgA=",
+      "beacon": "AQUBCAAA",
+      "consume": "AQUBBQAAAAA=",
+      "create": "AQUBBgA=",
+      "creative": "AQUBC4cD",
+      "creative_take": "AQUDC4cDDQGgBAIAAAAAAQABPDIFHAAA",
+      "destroy": "AQUBBAAAAAA=",
+      "drop": "AQUBAwAAAAAA",
+      "lab": "AQUBBw==",
+      "nonimplemented": "AQUBDA==",
+      "place": "AQUBAQAAAAAAAAA=",
+      "recipe": "AQUBCXs=",
+      "results": "AQUBDQGgBAIAAAAAAQ==",
+      "swap": "AQUBAgAAAAAAAA==",
+      "take": "AQUBAAE8MgUcAAA="
+    },
+    "revision": "aa4d4219e755b3e14b3ba2f24c3de5c9a532d669",
+    "stone_sword": 272
+  },
   "408": {
     "fixtures": {
       "auto": "AQUBCgA=",
