@@ -18,7 +18,14 @@ start() {
 }
 stop() { kill $pid 2>/dev/null; wait $pid 2>/dev/null; }
 if [ ! -f config.toml ]; then start; stop; fi
-sed -i '' -e 's/AuthEnabled = true/AuthEnabled = false/' -e "s/Address = \":19132\"/Address = \":$port\"/" config.toml
+sed -i '' -e "s/Address = \":19132\"/Address = \":$port\"/" config.toml
+# E2E_AUTH=1 keeps Xbox Live on: the offline e2e clients then only get in
+# below LegacyOfflineBelow.
+if [ "${E2E_AUTH:-0}" = 1 ]; then
+  sed -i '' -e 's/AuthEnabled = false/AuthEnabled = true/' config.toml
+else
+  sed -i '' -e 's/AuthEnabled = true/AuthEnabled = false/' config.toml
+fi
 for p in "$@"; do "$here/gen.sh" "$p" >/dev/null || { echo "client build failed for $p"; exit 1; }; done
 start
 rc=0
