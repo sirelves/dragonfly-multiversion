@@ -42,3 +42,18 @@ e2e_gt_history() {
 e2e_expect() {
   if [ "$1" -lt 534 ]; then echo AdventureSettings; else echo UpdateAbilities; fi
 }
+
+# e2e_cloudburst_cp: the classpath of CloudburstMC/Protocol's bedrock-codec,
+# built from CLOUDBURST (a clone; cloned into build/ on first use) with Java 17.
+e2e_cloudburst_cp() {
+  local here dir cache
+  here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  dir=${CLOUDBURST:-$here/build/cloudburst-protocol}
+  cache=$here/build/cloudburst.cp
+  if [ ! -s "$cache" ]; then
+    [ -d "$dir/.git" ] || git clone -q https://github.com/CloudburstMC/Protocol.git "$dir"
+    (cd "$dir" && JAVA_HOME=${JAVA17_HOME:-$(/usr/libexec/java_home -v 17)} ./gradlew -q --init-script "$here/cloudburst/cp.init.gradle" :bedrock-codec:printCp) |
+      sed -n 's/^CP=//p' >"$cache"
+  fi
+  cat "$cache"
+}

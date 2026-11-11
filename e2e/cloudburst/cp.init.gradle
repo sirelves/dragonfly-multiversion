@@ -1,0 +1,10 @@
+allprojects {
+  afterEvaluate { p ->
+    if (p.name == 'bedrock-codec') {
+      p.tasks.register('printCp') {
+        dependsOn 'jar', p.sourceSets.main.runtimeClasspath
+        doLast { println "CP=" + (p.sourceSets.main.runtimeClasspath + files(p.tasks.jar.archiveFile)).asPath }
+      }
+    }
+  }
+}

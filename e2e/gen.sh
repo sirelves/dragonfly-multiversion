@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 proto=$1 tag=${2:-$(e2e_tag "$1")}
 legacy=0
 dir=build/$proto
+[ "$tag" = "$(e2e_tag "$1")" ] || dir=build/$proto-$tag # its go.mod pins the tag
 mkdir -p "$dir" bin
 (cd /tmp && go mod download "github.com/sandertv/gophertunnel@$tag" >/dev/null 2>&1) || true
 cp client/main.go "$dir/main.go"

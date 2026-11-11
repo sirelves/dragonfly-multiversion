@@ -7,7 +7,12 @@ here=$(cd "$(dirname "$0")" && pwd)
 work=${E2E_WORK:-$here/build/srv}
 port=${E2E_PORT:-19232}
 mkdir -p "$work"
-(cd "$here/.." && go build -o "$work/dfmv" .) || exit 1
+# E2E_BIN runs a prebuilt server binary instead of building this tree.
+if [ -n "${E2E_BIN:-}" ]; then cp "$E2E_BIN" "$work/dfmv"; else (cd "$here/.." && go build -o "$work/dfmv" .) || exit 1; fi
+# E2E_CLOUDBURST=1 also decodes everything the server sent with CloudburstMC's
+# codec of that protocol (cloudburst/Check.java), which reads some fields
+# more strictly than gophertunnel, as the real clients do.
+[ "${E2E_CLOUDBURST:-0}" = 1 ] && { cp=$(e2e_cloudburst_cp) && [ -n "$cp" ] || { echo "CloudburstMC build failed"; exit 1; }; }
 cd "$work"
 start() {
   rm -f server.log
@@ -26,13 +31,20 @@ if [ "${E2E_AUTH:-0}" = 1 ]; then
 else
   sed -i '' -e 's/AuthEnabled = true/AuthEnabled = false/' config.toml
 fi
-for p in "$@"; do "$here/gen.sh" "$p" >/dev/null || { echo "client build failed for $p"; exit 1; }; done
+# E2E_TAG builds the clients from another gophertunnel tag (one protocol at a
+# time), E2E_VERSION is the game version that tag reports.
+for p in "$@"; do "$here/gen.sh" "$p" ${E2E_TAG:-} >/dev/null || { echo "client build failed for $p"; exit 1; }; done
 start
 rc=0
 for p in "$@"; do
   echo "=== client $p"
   before=$(wc -l <server.log)
-  E2E_RAKNET_PROTOCOL=$(e2e_raknet "$p") "$here/bin/client-$p" -expect "$(e2e_expect "$p")" -addr "127.0.0.1:$port" -name "e2e$p" -for "${E2E_FOR:-6s}" </dev/null || rc=1
+  dump=()
+  [ "${E2E_CLOUDBURST:-0}" = 1 ] && dump=(-dump "$work/dump-$p.txt")
+  E2E_RAKNET_PROTOCOL=$(e2e_raknet "$p") "$here/bin/client-$p" -expect "$(e2e_expect "$p")" -addr "127.0.0.1:$port" -name "e2e$p" -for "${E2E_FOR:-6s}" ${dump[@]+"${dump[@]}"} </dev/null || rc=1
+  if [ "${E2E_CLOUDBURST:-0}" = 1 ]; then
+    printf 'cloudburst: '; java -cp "$cp" "$here/cloudburst/Check.java" "$p" "$work/dump-$p.txt" "${E2E_VERSION:-$(awk -v p="$p" '$1==p{print $3}' "$here/versions.txt")}" 2>&1 | grep -v '^SLF4J' || rc=1
+  fi
   sleep 0.5
   if tail -n +"$((before + 1))" server.log | sed 's/\x1b\[[0-9;]*m//g' | grep -iE 'error|warn|panic|unhandled|unknown packet' ; then
     echo "SERVER-ERRORS for $p"; rc=1
