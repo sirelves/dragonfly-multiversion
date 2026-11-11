@@ -175,10 +175,11 @@ func (pk *StartGame) Marshal(io protocol.IO) {
 		if server && pk.PlayerMovementSettings.MovementType == 0 {
 			pk.PlayerMovementSettings.MovementType = 1
 		}
-	} else if p != 0 && p < 428 { // only the movement mode before 428
-		mode := uint32(pk.PlayerMovementSettings.MovementType)
-		io.Varuint32(&mode)
-		pk.PlayerMovementSettings.MovementType = int32(mode)
+	} else if p != 0 && p < 428 {
+		// Only the movement mode before 428, as a signed varint (CloudburstMC's
+		// StartGameSerializer_v419; gophertunnel v1.10 wrote it unsigned, which
+		// a real client reads as -1).
+		io.Varint32(&pk.PlayerMovementSettings.MovementType)
 	} else {
 		v786.PlayerMoveSettings786(io, &pk.PlayerMovementSettings)
 	}
