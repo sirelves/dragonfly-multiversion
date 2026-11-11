@@ -398,6 +398,9 @@ func worldGenerator(mode string) func(world.Dimension) world.Generator {
 	if mode == "current" || mode == "loaded" {
 		return func(world.Dimension) world.Generator { return world.NopGenerator{} } // loaded world as-is
 	}
+	if mode == "legacy-flat" {
+		return legacyFlatGenerator
+	}
 	return loadGenerator
 }
 
@@ -450,6 +453,17 @@ func newerVersion(a, b string) bool {
 		}
 	}
 	return len(as) > len(bs)
+}
+
+// legacyFlatGenerator is a flat world whose grass lies at y 3, where flat
+// worlds were before 1.18: clients older than 1.18.0 only see y 0–255, so the
+// default flat world at y -61 would be void to them.
+func legacyFlatGenerator(world.Dimension) world.Generator {
+	layers := []world.Block{block.Grass{}, block.Dirt{}, block.Dirt{}}
+	for range 64 {
+		layers = append(layers, block.Stone{})
+	}
+	return generator.NewFlat(biome.Plains{}, append(layers, block.Bedrock{}))
 }
 
 func loadGenerator(world.Dimension) world.Generator {

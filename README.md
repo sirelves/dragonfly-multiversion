@@ -61,7 +61,8 @@ before the packet layer: RakNet protocol 10, logins without
   `LegacyOfflineBelow = -1` to require Xbox Live from everyone.
 - **World height.** Before 1.18.0 worlds span y 0–255: blocks, block entities
   and updates outside that range are not sent, and the column biome comes from
-  y 64. Keep spawn and builds within it for those players.
+  y 64. Keep spawn and builds within it for those players. `World.Generator = "legacy-flat"`
+  makes a flat world with its grass at y 3, visible to every client.
 - **What is translated.** Packets those clients have no decoder for are
   dropped; item tags in recipes become concrete items; smithing recipes are not
   offered below 1.19.80; entity metadata keys and flag bits are renumbered.
