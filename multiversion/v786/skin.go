@@ -51,6 +51,11 @@ type Skin786 struct {
 	OverrideAppearance       bool
 
 	Trusted bool
+
+	// NoOverrideAppearance is not on the wire: it leaves OverrideAppearance out
+	// for 1.19.60 clients, which share protocol 567 with 1.19.62, the hotfix
+	// that added the field without a protocol bump.
+	NoOverrideAppearance bool
 }
 
 func (x *Skin786) Marshal(io protocol.IO) {
@@ -89,7 +94,7 @@ func (x *Skin786) Marshal(io protocol.IO) {
 		io.Bool(&x.PersonaCapeOnClassicSkin)
 		io.Bool(&x.PrimaryUser) // added in 465
 	}
-	if p := ProtoOf(io); p == 0 || p >= 567 { // added in 567
+	if p := ProtoOf(io); (p == 0 || p >= 567) && !x.NoOverrideAppearance { // added in 1.19.62 (567)
 		io.Bool(&x.OverrideAppearance)
 	}
 }

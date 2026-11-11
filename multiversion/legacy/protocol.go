@@ -132,6 +132,9 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) []pa
 		}
 	}
 	pks = p.knownOnly(pks)
+	if p.id == 567 {
+		skinsFor11960(conn, pks)
+	}
 	if trace && conn != nil {
 		st := stateOf(conn)
 		for _, pk := range pks {

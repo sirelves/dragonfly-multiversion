@@ -1,4 +1,6 @@
 # protocol  gophertunnel-tag  version   raknet
+# 567 is the 1.19.62 hotfix (v1.27.3); 1.19.60 shares the protocol without the
+# skin flag it added: E2E_TAG=v1.27.2 runs that variant.
 # 475 pins v1.18.1: v1.18.2 dropped the Education Edition pack exemption the
 # real client honours, so its dialer rejects every server.
 407         v1.7.11           1.16.0    10
@@ -21,7 +23,7 @@
 554         v1.24.13          1.19.30   11
 557         v1.25.2           1.19.40   11
 560         v1.26.1           1.19.50   11
-567         v1.27.3           1.19.60   11
+567         v1.27.3           1.19.62   11
 568         v1.27.4           1.19.63   11
 575         v1.28.2           1.19.70   11
 582         v1.29.0           1.19.80   11
