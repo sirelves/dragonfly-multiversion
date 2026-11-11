@@ -130,7 +130,14 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) []pa
 			pks = apply(pks, uint32(p.id), d.fromLatest)
 		}
 	}
-	return p.knownOnly(pks)
+	pks = p.knownOnly(pks)
+	if trace && conn != nil {
+		st := stateOf(conn)
+		for _, pk := range pks {
+			st.record(pk)
+		}
+	}
+	return pks
 }
 
 // knownOnly drops packets the client of p has no decoder for: newer server
