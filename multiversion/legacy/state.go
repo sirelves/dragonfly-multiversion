@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -18,9 +19,12 @@ type connState struct {
 	// and consumed by its next PlayerAuthInput.
 	stopFlying atomic.Bool
 
-	// sent holds the last packets sent to the client when MV_TRACE is set.
-	mu   sync.Mutex
-	sent []string
+	// sent holds the last packets sent to the client when MV_TRACE is set
+	// (chunks only counted), lastIn when the client last sent one.
+	mu     sync.Mutex
+	sent   []string
+	chunks int
+	lastIn time.Time
 }
 
 // trace is set by MV_TRACE=1: every legacy connection then keeps its last
@@ -36,10 +40,24 @@ func (st *connState) record(pk packet.Packet) {
 	}
 	st.mu.Lock()
 	defer st.mu.Unlock()
+	if pk.ID() == packet.IDLevelChunk || pk.ID() == packet.IDNetworkChunkPublisherUpdate {
+		st.chunks++
+		return
+	}
 	if len(st.sent) == traceDepth {
 		st.sent = st.sent[1:]
 	}
-	st.sent = append(st.sent, fmt.Sprintf("%T", pk))
+	st.sent = append(st.sent, fmt.Sprintf("%s %T (+%d chunks)", time.Now().Format("15:04:05.000"), pk, st.chunks))
+	st.chunks = 0
+}
+
+func (st *connState) received() {
+	if !trace {
+		return
+	}
+	st.mu.Lock()
+	st.lastIn = time.Now()
+	st.mu.Unlock()
 }
 
 var states sync.Map // *minecraft.Conn → *connState
@@ -64,7 +82,8 @@ func stateOf(conn *minecraft.Conn) *connState {
 				s.mu.Lock()
 				defer s.mu.Unlock()
 				slog.Info("legacy connection closed; last packets sent", "name", conn.IdentityData().DisplayName,
-					"version", conn.ClientData().GameVersion, "packets", strings.Join(s.sent, " "))
+					"version", conn.ClientData().GameVersion, "last_received", s.lastIn.Format("15:04:05.000"),
+					"chunks_after", s.chunks, "packets", strings.Join(s.sent, " | "))
 			}
 		}()
 	}

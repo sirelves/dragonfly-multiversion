@@ -101,6 +101,7 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 	pks := []packet.Packet{pk}
 	ds := p.deltas()
 	st := stateOf(conn)
+	st.received()
 	for i := len(ds) - 1; i >= 0; i-- {
 		if ds[i].toLatest != nil {
 			pks = apply(pks, uint32(p.id), ds[i].toLatest)
