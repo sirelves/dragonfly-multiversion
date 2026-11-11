@@ -66,8 +66,9 @@ before the packet layer: RakNet protocol 10, logins without
 - **What is translated.** Packets those clients have no decoder for are
   dropped; item tags in recipes become concrete items; smithing recipes are not
   offered below 1.19.80; entity metadata keys and flag bits are renumbered.
-- **Not yet.** Command parameter types still use the 1.20.0 numbering, so
-  argument hints may be off on the oldest clients.
+- **1.19.60 and 1.19.62** both report protocol 567, but 1.19.62 added a skin
+  flag; the game version in the login decides which form a client gets.
+  Skins those clients send are read in the 1.19.62 form.
 
 ### Verifying a protocol
 
@@ -78,8 +79,14 @@ the gophertunnel tag that shipped its protocol (`e2e/versions.txt`).
 e2e/run.sh 407 545 582        # join, walk, chat; fails on any decode or server error
 E2E_AUTH=1 e2e/run.sh 582 589 # the offline split: 582 gets in, 589 must log in
 e2e/verify.sh 407             # every packet both ways against that tag's codec
+E2E_CLOUDBURST=1 e2e/run.sh 419 # also decode all the server sent with CloudburstMC's codec
 ./check.sh                    # build, vet, multiversion and server tests
 ```
+
+gophertunnel reads some fields more leniently than the game does, so
+`E2E_CLOUDBURST=1` cross-checks every packet against CloudburstMC/Protocol (the
+codec behind Geyser), built from a clone with Java 17; a field the real client
+would choke on fails there even when gophertunnel's reader accepts it.
 
 Data provenance: block palettes, item registries, biomes and entities come from
 the per-protocol dumps of IdotClub/BedrockData (LGPL-2.1, a fork of
