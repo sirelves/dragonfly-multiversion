@@ -1,4 +1,4 @@
-<h1 align="center">TM-Dragonfly</h1>
+<h1 align="center">dragonfly-multiversion</h1>
 
 <p align="center">
   Minecraft: Bedrock server software in Go — one listener for every client from 1.16.0 to 1.26.60.
@@ -8,7 +8,6 @@
   <img src="https://img.shields.io/badge/go-1.26+-00ADD8?logo=go&logoColor=white" alt="Go 1.26+">
   <img src="https://img.shields.io/badge/bedrock-1.16.0%20→%201.26.60-9BE564" alt="Bedrock 1.16.0 to 1.26.60">
   <img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="MIT License">
-  <a href="https://t.me/TMDragonfly"><img src="https://img.shields.io/badge/telegram-@TMDragonfly-229ED9?logo=telegram&logoColor=white" alt="Telegram"></a>
 </p>
 
 ## What is this?
@@ -32,13 +31,18 @@ underneath — build your game on top of it as a Go library.
 Needs **Go 1.26+**.
 
 ```shell
-git clone https://github.com/TrueTemm/TM-Dragonfly
-cd TM-Dragonfly
+git clone https://github.com/sirelves/dragonfly-multiversion
+cd dragonfly-multiversion
 go run .
 ```
 
 A `config.toml` and `ops.yml` are written on first start. Type `stop` or press **ctrl+c** to shut
-down. Release build: `go build -o tm-dragonfly .`
+down. Release build: `go build -o dragonfly-multiversion .`
+
+Build from a clone of this repository. The module path is still
+`github.com/df-mc/dragonfly`, and the RakNet 10 that clients before 1.19.30 speak comes from the
+patched copy in `third_party/go-raknet` through a `replace` directive, which Go ignores in
+dependencies: `go install` or importing this module from another project would build without it.
 
 ## Clients before 1.20.0
 
@@ -110,6 +114,5 @@ printed only when a NetherNet listener fails to open or stops with an error.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Credits: [Dragonfly](https://github.com/df-mc/dragonfly).
-
-Telegram: [@TMDragonfly](https://t.me/TMDragonfly)
+MIT — see [LICENSE](LICENSE). Credits: [Dragonfly](https://github.com/df-mc/dragonfly) and
+[TM-Dragonfly](https://github.com/TrueTemm/TM-Dragonfly) by TrueTemm, which this extends.
