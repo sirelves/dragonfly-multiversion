@@ -13,7 +13,8 @@
 
 ## What is this?
 
-A fork of [Dragonfly](https://github.com/df-mc/dragonfly) with full **multiversion** support:
+Built on [TM-Dragonfly](https://github.com/TrueTemm/TM-Dragonfly) by TrueTemm (1.20.0 → 1.26.60),
+extended here down to 1.16.0. A fork of [Dragonfly](https://github.com/df-mc/dragonfly) with full **multiversion** support:
 every client from Bedrock **1.16.0 to 1.26.60** joins the same server, same port, no proxy. The
 newest version runs natively; older ones are translated per client. Still the full Dragonfly API
 underneath — build your game on top of it as a Go library.
