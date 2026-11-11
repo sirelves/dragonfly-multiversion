@@ -50,7 +50,7 @@ func opOnly(o *ops, src cmd.Source) bool {
 type aboutCmd struct{}
 
 func (aboutCmd) Run(_ cmd.Source, out *cmd.Output, _ *world.Tx) {
-	out.Printf("§aTM-Dragonfly§r by TrueTemm — multiversion Bedrock 1.20.0 … 1.26.60")
+	out.Printf("§aTM-Dragonfly§r by TrueTemm — multiversion Bedrock 1.16.0 … 1.26.60")
 	out.Printf("Build %s", buildStamp())
 	out.Printf("Preview 1.20.20.20 — protocol 598")
 }
